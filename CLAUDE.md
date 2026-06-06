@@ -84,6 +84,13 @@ config/       → 配置类、安全、OpenAPI
 - 事务边界在 application 层
 - 跨服务调用必须通过 adapter 封装
 
+### 接口设计原则（降低耦合）
+- **DTO 与 Entity 分离** — Controller 只使用专用 DTO，禁止直接返回/接收 Entity
+- **分层隔离** — Controller → Service 接口（非具体类），Service → Repository 接口
+- **Request/Response 独立** — 每个接口使用专属的 Request 和 Response DTO，不共用
+- **字段最小化** — DTO 只暴露接口需要的字段，不泄露底层表结构
+- **跨服务通过 adapter** — 调用外部服务必须封装 adapter，不直接在业务代码中发起 HTTP 调用
+
 ### 前端规范
 - React: TypeScript 严格模式，状态管理用 Zustand/React Query
 - API 类型由共享类型包生成，禁止硬编码接口地址
