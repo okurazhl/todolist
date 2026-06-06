@@ -1,0 +1,155 @@
+services:
+  # =============================================
+  # PostgreSQL 17 — 主数据库
+  # =============================================
+  postgres:
+    image: postgres:17-alpine
+    container_name: smartmemo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: smartmemo
+      POSTGRES_PASSWORD: smartmemo_dev
+      POSTGRES_DB: smartmemo
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartmemo -d smartmemo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smartmemo-net
+
+  # =============================================
+  # Redis 7 — 缓存 / Session / 限流
+  # =============================================
+  redis:
+    image: redis:7-alpine
+    container_name: smartmemo-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass smartmemo_dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smartmemo-net
+
+  # =============================================
+  # Kafka + Zookeeper — 消息队列
+  # =============================================
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.7.0
+    container_name: smartmemo-zookeeper
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_log:/var/lib/zookeeper/log
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smartmemo-net
+
+  kafka:
+    image: confluentinc/cp-kafka:7.7.0
+    container_name: smartmemo-kafka
+    restart: unless-stopped
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+    networks:
+      - smartmemo-net
+
+  # =============================================
+  # Elasticsearch 8 — 全文搜索
+  # =============================================
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: smartmemo-elasticsearch
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+      xpack.security.enabled: "false"
+      xpack.security.enrollment.enabled: "false"
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -qE 'green|yellow'"]
+      interval: 15s
+      timeout: 10s
+      retries: 15
+      start_period: 60s
+    networks:
+      - smartmemo-net
+
+  # =============================================
+  # MinIO — 对象存储（录音/图片/附件）
+  # =============================================
+  minio:
+    image: minio/minio:latest
+    container_name: smartmemo-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin_dev
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smartmemo-net
+
+volumes:
+  postgres_data:
+  redis_data:
+  zookeeper_data:
+  zookeeper_log:
+  kafka_data:
+  es_data:
+  minio_data:
+
+networks:
+  smartmemo-net:
+    driver: bridge
+    name: smartmemo-net

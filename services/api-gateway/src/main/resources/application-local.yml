@@ -1,0 +1,16 @@
+# 本地开发环境配置
+spring:
+  cloud:
+    gateway:
+      # 开发阶段允许所有 CORS
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            maxAge: 3600
+
+logging:
+  level:
+    com.smartmemo.gateway: DEBUG

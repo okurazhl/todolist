@@ -1,0 +1,54 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  profiles:
+    active: local
+  cloud:
+    gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+      routes:
+        # ===== 健康检查（Gateway 自身） =====
+        - id: health
+          uri: no://op
+          predicates:
+            - Path=/actuator/**
+          filters:
+            - StripPrefix=0
+        # ===== 后续微服务路由占位 =====
+        # - id: user-service
+        #   uri: lb://user-service
+        #   predicates:
+        #     - Path=/api/v1/users/**
+        # - id: memo-service
+        #   uri: lb://memo-service
+        #   predicates:
+        #     - Path=/api/v1/memos/**
+
+  # Redis 连接（限流用）
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:smartmemo_dev}
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+# 日志
+logging:
+  level:
+    com.smartmemo.gateway: DEBUG
+    org.springframework.cloud.gateway: INFO
+  pattern:
+    console: '{"timestamp":"%d{yyyy-MM-dd HH:mm:ss.SSS}","level":"%p","service":"${spring.application.name}","traceId":"%X{traceId:-}","message":"%msg"}%n'

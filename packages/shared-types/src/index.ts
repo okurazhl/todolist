@@ -1,0 +1,88 @@
+// =============================================
+// 智能备忘录 — 共享类型定义
+// 所有前端应用（Web、Desktop、Mobile）共用
+// =============================================
+
+/**
+ * 统一 API 响应格式
+ */
+export interface ApiResponse<T = unknown> {
+  code: string;
+  message: string;
+  data: T;
+  traceId: string;
+}
+
+/**
+ * 游标分页响应
+ */
+export interface PaginatedResponse<T> {
+  items: T[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
+/**
+ * 错误码枚举
+ */
+export const ErrorCode = {
+  // 认证鉴权
+  AUTH_TOKEN_EXPIRED: 'AUTH_TOKEN_EXPIRED',
+  AUTH_TOKEN_INVALID: 'AUTH_TOKEN_INVALID',
+  AUTH_UNAUTHORIZED: 'AUTH_UNAUTHORIZED',
+
+  // 用户
+  USER_NOT_FOUND: 'USER_NOT_FOUND',
+  USER_ALREADY_EXISTS: 'USER_ALREADY_EXISTS',
+  USER_DISABLED: 'USER_DISABLED',
+
+  // 备忘录
+  MEMO_NOT_FOUND: 'MEMO_NOT_FOUND',
+  MEMO_VERSION_CONFLICT: 'MEMO_VERSION_CONFLICT',
+
+  // 同步
+  SYNC_CONFLICT: 'SYNC_CONFLICT',
+  SYNC_CURSOR_INVALID: 'SYNC_CURSOR_INVALID',
+
+  // 语音识别
+  ASR_TASK_FAILED: 'ASR_TASK_FAILED',
+  ASR_UNSUPPORTED_FORMAT: 'ASR_UNSUPPORTED_FORMAT',
+
+  // AI 语义
+  AI_TIMEOUT: 'AI_TIMEOUT',
+  AI_MODEL_ERROR: 'AI_MODEL_ERROR',
+
+  // 蓝牙
+  BLE_DEVICE_NOT_FOUND: 'BLE_DEVICE_NOT_FOUND',
+  BLE_BINDING_FAILED: 'BLE_BINDING_FAILED',
+
+  // 推送
+  PUSH_TOKEN_INVALID: 'PUSH_TOKEN_INVALID',
+  PUSH_SEND_FAILED: 'PUSH_SEND_FAILED',
+
+  // 文件
+  FILE_NOT_FOUND: 'FILE_NOT_FOUND',
+  FILE_TOO_LARGE: 'FILE_TOO_LARGE',
+
+  // 系统
+  SYS_ERROR: 'SYS_ERROR',
+  SYS_RATE_LIMITED: 'SYS_RATE_LIMITED',
+  SYS_SERVICE_UNAVAILABLE: 'SYS_SERVICE_UNAVAILABLE',
+} as const;
+
+export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
+
+/**
+ * 服务名称
+ */
+export type ServiceName =
+  | 'api-gateway'
+  | 'user-service'
+  | 'memo-service'
+  | 'sync-service'
+  | 'asr-service'
+  | 'ai-service'
+  | 'bluetooth-service'
+  | 'push-service'
+  | 'file-service'
+  | 'search-service';

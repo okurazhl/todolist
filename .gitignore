@@ -1,0 +1,51 @@
+# ===== Java / Gradle =====
+build/
+.gradle/
+*.class
+*.jar
+*.war
+!gradle/wrapper/gradle-wrapper.jar
+
+# ===== Node.js =====
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# ===== IDE =====
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
+# ===== Docker =====
+infra/data/
+
+# ===== Environment =====
+.env
+.env.local
+.env.*.local
+*.env
+
+# ===== Logs =====
+logs/
+*.log
+
+# ===== Flutter =====
+.dart_tool/
+.packages
+pubspec.lock
+build/
