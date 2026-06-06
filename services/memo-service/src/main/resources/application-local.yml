@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/smartmemo
+
+minio:
+  endpoint: http://localhost:9000
+
+logging:
+  level:
+    com.smartmemo.memo: DEBUG

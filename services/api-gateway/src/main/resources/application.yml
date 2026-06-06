@@ -33,6 +33,24 @@ spring:
           predicates:
             - Path=/api/v1/devices/**
 
+        # ===== 备忘录服务路由 =====
+        - id: memo-service-memos
+          uri: http://localhost:8082
+          predicates:
+            - Path=/api/v1/memos/**
+        - id: memo-service-tags
+          uri: http://localhost:8082
+          predicates:
+            - Path=/api/v1/tags/**
+        - id: memo-service-categories
+          uri: http://localhost:8082
+          predicates:
+            - Path=/api/v1/categories/**
+        - id: memo-service-attachments
+          uri: http://localhost:8082
+          predicates:
+            - Path=/api/v1/attachments/**
+
   # Redis 连接（限流用）
   data:
     redis:

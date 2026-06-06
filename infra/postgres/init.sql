@@ -98,3 +98,85 @@ CREATE TRIGGER update_users_updated_at
 CREATE TRIGGER update_user_devices_updated_at
     BEFORE UPDATE ON user_devices
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- =============================================
+-- MVP Step 3: 备忘录相关表
+-- =============================================
+
+-- 分类表
+CREATE TABLE IF NOT EXISTS categories (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id     UUID NOT NULL REFERENCES users(id),
+    name        VARCHAR(64) NOT NULL,
+    color       VARCHAR(7),
+    sort_order  INTEGER NOT NULL DEFAULT 0,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at  TIMESTAMPTZ,
+    version     INTEGER NOT NULL DEFAULT 1
+);
+CREATE INDEX IF NOT EXISTS idx_categories_user_id ON categories (user_id) WHERE deleted_at IS NULL;
+CREATE TRIGGER update_categories_updated_at
+    BEFORE UPDATE ON categories FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- 标签字典
+CREATE TABLE IF NOT EXISTS memo_tags (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id     UUID NOT NULL REFERENCES users(id),
+    name        VARCHAR(32) NOT NULL,
+    color       VARCHAR(7),
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at  TIMESTAMPTZ,
+    version     INTEGER NOT NULL DEFAULT 1
+);
+CREATE INDEX IF NOT EXISTS idx_memo_tags_user_id ON memo_tags (user_id) WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_memo_tags_name ON memo_tags (user_id, name) WHERE deleted_at IS NULL;
+CREATE TRIGGER update_memo_tags_updated_at
+    BEFORE UPDATE ON memo_tags FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- 备忘录主表
+CREATE TABLE IF NOT EXISTS memos (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id     UUID NOT NULL REFERENCES users(id),
+    title       VARCHAR(256) NOT NULL,
+    content     TEXT,
+    category_id UUID,
+    status      VARCHAR(16) NOT NULL DEFAULT 'active',
+    is_pinned   BOOLEAN NOT NULL DEFAULT false,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by  UUID,
+    updated_by  UUID,
+    deleted_at  TIMESTAMPTZ,
+    version     INTEGER NOT NULL DEFAULT 1
+);
+CREATE INDEX IF NOT EXISTS idx_memos_user_id ON memos (user_id) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_memos_status ON memos (user_id, status) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_memos_category ON memos (user_id, category_id) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_memos_updated ON memos (user_id, updated_at DESC) WHERE deleted_at IS NULL;
+CREATE TRIGGER update_memos_updated_at
+    BEFORE UPDATE ON memos FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- 备忘录-标签关联
+CREATE TABLE IF NOT EXISTS memo_tag_relations (
+    memo_id     UUID NOT NULL REFERENCES memos(id),
+    tag_id      UUID NOT NULL REFERENCES memo_tags(id),
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (memo_id, tag_id)
+);
+
+-- 附件表
+CREATE TABLE IF NOT EXISTS memo_attachments (
+    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    memo_id      UUID NOT NULL REFERENCES memos(id),
+    user_id      UUID NOT NULL REFERENCES users(id),
+    file_name    VARCHAR(256) NOT NULL,
+    file_size    BIGINT NOT NULL,
+    content_type VARCHAR(128),
+    object_key   VARCHAR(512) NOT NULL,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at   TIMESTAMPTZ,
+    version      INTEGER NOT NULL DEFAULT 1
+);
+CREATE INDEX IF NOT EXISTS idx_memo_attachments_memo_id ON memo_attachments (memo_id) WHERE deleted_at IS NULL;

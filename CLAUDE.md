@@ -52,8 +52,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 1. ✅ 基础工程搭建（已完成：2026-06-06）
 2. ✅ API Gateway + 用户服务 + 鉴权（已完成：2026-06-06）
-3. **备忘录 CRUD + 标签 + 分类 + 附件** ← 当前步骤
-4. Flutter / Web 基础页面
+3. ✅ 备忘录 CRUD + 标签 + 分类 + 附件（已完成：2026-06-06）
+4. **Flutter / Web 基础页面** ← 当前步骤
 5. ASR 任务创建 + 录音上传 + 转写回填
 6. AI 摘要 + 标签推荐 + 待办提取
 7. 基础增量同步 + WebSocket 通知

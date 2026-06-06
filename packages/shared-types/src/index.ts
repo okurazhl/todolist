@@ -129,6 +129,77 @@ export interface UpdateUserRequest {
   phone?: string;
 }
 
+// =============================================
+// 备忘录相关类型
+// =============================================
+
+export interface CreateMemoRequest {
+  title: string;
+  content?: string;
+  categoryId?: string;
+  tagIds?: string[];
+  isPinned?: boolean;
+}
+
+export interface UpdateMemoRequest {
+  title?: string;
+  content?: string;
+  categoryId?: string;
+  tagIds?: string[];
+  isPinned?: boolean;
+}
+
+export interface MemoResponse {
+  id: string;
+  title: string;
+  content: string | null;
+  categoryId: string | null;
+  status: 'active' | 'archived' | 'deleted';
+  isPinned: boolean;
+  tagIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MemoListResponse {
+  items: MemoResponse[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
+export interface CreateTagRequest {
+  name: string;
+  color?: string;
+}
+
+export interface TagResponse {
+  id: string;
+  name: string;
+  color: string | null;
+}
+
+export interface CreateCategoryRequest {
+  name: string;
+  color?: string;
+  sortOrder?: number;
+}
+
+export interface CategoryResponse {
+  id: string;
+  name: string;
+  color: string | null;
+  sortOrder: number;
+}
+
+export interface AttachmentResponse {
+  id: string;
+  memoId: string;
+  fileName: string;
+  fileSize: number;
+  contentType: string | null;
+  createdAt: string;
+}
+
 /** 绑定设备请求 */
 export interface BindDeviceRequest {
   deviceType: 'ios' | 'android' | 'web' | 'desktop';
