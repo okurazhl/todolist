@@ -109,6 +109,25 @@ config/       → 配置类、安全、OpenAPI
 - 同步服务必须覆盖冲突场景
 - AI 服务必须覆盖 schema 校验和失败降级
 
+## 本地开发启动
+
+每次新会话或重启后，按以下顺序启动服务：
+
+```bash
+# 1. 基础设施（后台运行，通常不需要重启）
+cd infra && docker compose up -d
+
+# 2. 后端服务（需要 3 个终端窗口，各启动一个）
+cd services/user-service && ./gradlew bootRun   # 端口 8081
+cd services/memo-service && ./gradlew bootRun    # 端口 8082
+cd services/api-gateway && ./gradlew bootRun     # 端口 8080（统一入口）
+
+# 3. Web 前端
+cd apps/web && npm run dev                       # 端口 5173
+```
+
+启动后浏览器访问 http://localhost:5173
+
 ## 对话语言
 
 使用中文进行所有对话。
