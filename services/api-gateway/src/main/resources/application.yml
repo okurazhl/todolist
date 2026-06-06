@@ -18,15 +18,20 @@ spring:
             - Path=/actuator/**
           filters:
             - StripPrefix=0
-        # ===== 后续微服务路由占位 =====
-        # - id: user-service
-        #   uri: lb://user-service
-        #   predicates:
-        #     - Path=/api/v1/users/**
-        # - id: memo-service
-        #   uri: lb://memo-service
-        #   predicates:
-        #     - Path=/api/v1/memos/**
+
+        # ===== 用户服务路由 =====
+        - id: user-service-auth
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/v1/auth/**
+        - id: user-service-users
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/v1/users/**
+        - id: user-service-devices
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/v1/devices/**
 
   # Redis 连接（限流用）
   data:
@@ -34,6 +39,10 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:smartmemo_dev}
+
+# JWT 配置（与 user-service 保持一致）
+jwt:
+  secret: ${JWT_SECRET:smartmemo-dev-secret-key-change-in-production-min-256-bits}
 
 # Actuator
 management:

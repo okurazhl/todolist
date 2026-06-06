@@ -7,8 +7,8 @@ import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 
 /**
- * 安全配置（占位）。
- * 当前允许所有请求，后续在 MVP Step 2 中集成 JWT 鉴权。
+ * API Gateway 安全配置。
+ * JWT 鉴权由 AuthFilter 处理，此处配置 Spring Security 放行所有请求（AuthFilter 前置拦截）。
  */
 @Configuration
 @EnableWebFluxSecurity

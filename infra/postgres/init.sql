@@ -62,6 +62,34 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+-- =============================================
+-- Refresh Token 表
+-- 存储 Refresh Token 的 SHA-256 哈希，支持轮换和撤销
+-- =============================================
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id       UUID NOT NULL REFERENCES users(id),
+    token_hash    VARCHAR(255) NOT NULL,
+    device_id     UUID,
+    expires_at    TIMESTAMPTZ NOT NULL,
+    revoked_at    TIMESTAMPTZ,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens (user_id);
+CREATE INDEX idx_refresh_tokens_token_hash ON refresh_tokens (token_hash);
+
+-- =============================================
+-- 自动更新 updated_at 触发器函数
+-- =============================================
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
 -- 为已有表创建触发器
 CREATE TRIGGER update_users_updated_at
     BEFORE UPDATE ON users

@@ -72,6 +72,71 @@ export const ErrorCode = {
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
 
+// =============================================
+// 认证相关类型
+// =============================================
+
+/** 注册请求 */
+export interface RegisterRequest {
+  username: string;
+  password: string;
+  email?: string;
+  phone?: string;
+}
+
+/** 登录请求 */
+export interface LoginRequest {
+  username: string;
+  password: string;
+  deviceType?: 'ios' | 'android' | 'web' | 'desktop';
+  deviceName?: string;
+}
+
+/** 刷新 Token 请求 */
+export interface RefreshRequest {
+  refreshToken: string;
+}
+
+/** 认证响应 */
+export interface AuthResponse {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number; // Access Token 有效期（秒）
+}
+
+/** 用户信息 */
+export interface UserInfo {
+  id: string;
+  username: string;
+  email: string | null;
+  phone: string | null;
+  status: string;
+  createdAt: string;
+}
+
+/** 用户设备 */
+export interface UserDevice {
+  id: string;
+  deviceType: string;
+  deviceName: string | null;
+  lastOnlineAt: string | null;
+  createdAt: string;
+}
+
+/** 更新用户请求 */
+export interface UpdateUserRequest {
+  email?: string;
+  phone?: string;
+}
+
+/** 绑定设备请求 */
+export interface BindDeviceRequest {
+  deviceType: 'ios' | 'android' | 'web' | 'desktop';
+  deviceName?: string;
+  pushToken?: string;
+  pushProvider?: 'apns' | 'fcm' | 'huawei' | 'xiaomi';
+}
+
 /**
  * 服务名称
  */
