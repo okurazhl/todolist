@@ -46,3 +46,10 @@ def upload_audio(user_id: str, file_name: str, data: bytes, content_type: str) -
     )
     logger.info("Audio uploaded: object=%s, size=%d", object_key, len(data))
     return object_key
+
+
+def get_presigned_url(object_key: str, expiry_hours: int = 24) -> str:
+    """生成预签名下载 URL，供外部 ASR 服务拉取音频。"""
+    from datetime import timedelta
+    client = _get_client()
+    return client.presigned_get_object(MINIO_BUCKET, object_key, expires=timedelta(hours=expiry_hours))
