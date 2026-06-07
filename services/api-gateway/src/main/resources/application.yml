@@ -51,6 +51,12 @@ spring:
           predicates:
             - Path=/api/v1/attachments/**
 
+        # ===== ASR 服务路由 =====
+        - id: asr-service
+          uri: http://localhost:8001
+          predicates:
+            - Path=/api/v1/asr/**
+
   # Redis 连接（限流用）
   data:
     redis:

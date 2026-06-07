@@ -180,3 +180,25 @@ CREATE TABLE IF NOT EXISTS memo_attachments (
     version      INTEGER NOT NULL DEFAULT 1
 );
 CREATE INDEX IF NOT EXISTS idx_memo_attachments_memo_id ON memo_attachments (memo_id) WHERE deleted_at IS NULL;
+
+-- =============================================
+-- MVP Step 5: ASR 语音转写任务表
+-- =============================================
+CREATE TABLE IF NOT EXISTS asr_tasks (
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id          UUID NOT NULL REFERENCES users(id),
+    file_name        VARCHAR(256) NOT NULL,
+    file_size        BIGINT NOT NULL,
+    content_type     VARCHAR(128),
+    object_key       VARCHAR(512) NOT NULL,
+    memo_id          UUID,
+    status           VARCHAR(16) NOT NULL DEFAULT 'pending',
+    transcribed_text TEXT,
+    duration_seconds INTEGER,
+    error_message    TEXT,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+    completed_at     TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_asr_tasks_user_id ON asr_tasks (user_id);
+CREATE INDEX IF NOT EXISTS idx_asr_tasks_status ON asr_tasks (user_id, status);

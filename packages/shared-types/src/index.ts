@@ -130,6 +130,27 @@ export interface UpdateUserRequest {
 }
 
 // =============================================
+// ASR 语音转写相关类型
+// =============================================
+
+export interface AsrTask {
+  taskId: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  fileName: string;
+  fileSize: number;
+  memoId: string | null;
+  transcribedText: string | null;
+  durationSeconds: number | null;
+  errorMessage: string | null;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+export interface AsrTaskListResponse {
+  items: AsrTask[];
+}
+
+// =============================================
 // 备忘录相关类型
 // =============================================
 
