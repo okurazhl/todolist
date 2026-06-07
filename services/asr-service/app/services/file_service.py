@@ -7,7 +7,7 @@ import io
 import uuid
 import logging
 from minio import Minio
-from app.core.config import MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, MINIO_BUCKET
+from app.core.config import MINIO_ENDPOINT, MINIO_PUBLIC_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, MINIO_BUCKET
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,11 @@ def upload_audio(user_id: str, file_name: str, data: bytes, content_type: str) -
 
 
 def get_presigned_url(object_key: str, expiry_hours: int = 24) -> str:
-    """生成预签名下载 URL，供外部 ASR 服务拉取音频。"""
+    """生成预签名下载 URL，供外部 ASR 服务拉取音频。
+    若配置了 MINIO_PUBLIC_ENDPOINT，则使用公网域名替换 localhost。
+    """
     from datetime import timedelta
-    client = _get_client()
-    return client.presigned_get_object(MINIO_BUCKET, object_key, expires=timedelta(hours=expiry_hours))
+    internal_url = _get_client().presigned_get_object(
+        MINIO_BUCKET, object_key, expires=timedelta(hours=expiry_hours)
+    )
+    return internal_url.replace(MINIO_ENDPOINT, MINIO_PUBLIC_ENDPOINT)

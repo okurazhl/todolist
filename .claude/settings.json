@@ -33,7 +33,20 @@
       "Bash(docker info *)",
       "Bash(npm --version)",
       "Bash(docker pull *)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(AUTH_PASSWORD=change-me docker compose up -d)",
+      "Bash(curl -s --connect-timeout 5 http://localhost:17039)",
+      "Bash(curl -s --connect-timeout 5 http://localhost:18920)",
+      "Bash(DASHSCOPE_API_KEY=\"sk-caa0e0bd611d4bb790f6793b04cb847e\" python -m uvicorn app.main:app --host 0.0.0.0 --port 8003)",
+      "Bash(curl -s -o /dev/null -w \"DGLab-AI HTTP状态: %{http_code}\" --connect-timeout 3 http://localhost:17039)",
+      "Bash(curl -s -o /dev/null -w \"CoyoteGameHub HTTP状态: %{http_code}\" --connect-timeout 3 http://localhost:18920)",
+      "Bash(curl -s http://localhost:8003/actuator/health)",
+      "Bash(curl -s -X POST http://localhost:8003/api/v1/asr/tasks -F 'file=@C:\\\\Users\\\\okura/test.wav' -H 'X-User-Id: 6eef4aea-6c79-428b-b3b5-8f9c8e14600d')",
+      "Bash(pip3 list *)",
+      "Bash(pip3 install *)",
+      "Bash(python3 -c ' *)",
+      "Bash(curl -s --connect-timeout 3 http://localhost:17039/api/health)",
+      "Bash(curl -s --connect-timeout 3 -H \"x-auth-password: bobh888888\" http://localhost:17039/api/health)"
     ]
   }
 }
