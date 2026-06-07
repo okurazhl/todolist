@@ -1,20 +1,24 @@
 """
 ASR 转录引擎。
 
-支持两种模式，通过 USE_MOCK 环境变量切换（默认使用真实引擎）。
-
-真实引擎：阿里云 DashScope fun-asr
-Mock 引擎：固定延迟 + 占位文本（调试用）
+默认使用 硅基流动 SiliconFlow SenseVoiceSmall（云端免费）。
+可通过 ASR_ENGINE_MOCK=true 切换到 Mock 引擎。
 """
 
 import logging
 import os
-from app.core.config import DASHSCOPE_API_KEY, DASHSCOPE_BASE_URL
+import httpx
+from app.core.config import SILICONFLOW_API_KEY as _SF_KEY
 from app.services.file_service import get_presigned_url
 
 logger = logging.getLogger(__name__)
 
 USE_MOCK = os.getenv("ASR_ENGINE_MOCK", "false").lower() == "true"
+
+# SiliconFlow 配置
+SILICONFLOW_API_KEY = os.getenv("SILICONFLOW_API_KEY") or _SF_KEY
+SILICONFLOW_ASR_URL = "https://api.siliconflow.cn/v1/audio/transcriptions"
+SILICONFLOW_MODEL = "FunAudioLLM/SenseVoiceSmall"
 
 
 async def transcribe(object_key: str) -> tuple[str, int]:
@@ -23,79 +27,50 @@ async def transcribe(object_key: str) -> tuple[str, int]:
     """
     if USE_MOCK:
         return await _mock_transcribe(object_key)
-    return await _dashscope_transcribe(object_key)
+    return await _siliconflow_transcribe(object_key)
 
 
-# ==================== DashScope 真实引擎 ====================
+# ==================== SiliconFlow SenseVoice 引擎 ====================
 
-async def _dashscope_transcribe(object_key: str) -> tuple[str, int]:
-    """使用阿里云 DashScope fun-asr 进行真实转写。"""
-    import dashscope
-    from dashscope.audio.asr import Transcription
-    from http import HTTPStatus
+async def _siliconflow_transcribe(object_key: str) -> tuple[str, int]:
+    """使用硅基流动 SenseVoiceSmall 进行语音转写。"""
+    from app.services.file_service import _get_client
+    from app.core.config import MINIO_BUCKET
 
-    dashscope.api_key = DASHSCOPE_API_KEY
-    dashscope.base_http_api_url = DASHSCOPE_BASE_URL
+    # 从 MinIO 下载音频字节
+    client = _get_client()
+    response = client.get_object(MINIO_BUCKET, object_key)
+    audio_bytes = response.read()
+    response.close()
+    response.release_conn()
 
-    # 生成预签名 URL
-    url = get_presigned_url(object_key, expiry_hours=24)
-    logger.info("Submitting ASR task: object=%s, url=%s...", object_key, url[:80])
+    logger.info("Submitting to SiliconFlow: object=%s, size=%d, model=%s",
+                object_key, len(audio_bytes), SILICONFLOW_MODEL)
 
-    # 提交任务
-    task_response = Transcription.async_call(
-        model='fun-asr',
-        file_urls=[url],
-        language_hints=['zh'],
-    )
-
-    logger.info("DashScope response: status=%s, output=%s, message=%s",
-                task_response.status_code, task_response.output, task_response.message)
-
-    if task_response.status_code != HTTPStatus.OK or task_response.output is None:
-        raise RuntimeError(
-            f"DashScope 提交失败: status={task_response.status_code}, "
-            f"message={task_response.message}. "
-            f"请确认: 1) DASHSCOPE_API_KEY 有效 2) 音频 URL 公网可访问"
+    # 提交文件到 SiliconFlow
+    async with httpx.AsyncClient(timeout=30) as http:
+        resp = await http.post(
+            SILICONFLOW_ASR_URL,
+            headers={"Authorization": f"Bearer {SILICONFLOW_API_KEY}"},
+            files={"file": ("audio.wav", audio_bytes, "audio/wav")},
+            data={"model": SILICONFLOW_MODEL},
         )
 
-    task_id = task_response.output.task_id
-    logger.info("ASR task submitted: taskId=%s, status=%s", task_id,
-                task_response.output.task_status)
+    if resp.status_code != 200:
+        raise RuntimeError(
+            f"SiliconFlow 转写失败: status={resp.status_code}, "
+            f"body={resp.text[:200]}"
+        )
 
-    # 等待完成
-    result = Transcription.wait(task=task_id)
+    result = resp.json()
+    text = result.get("text", "").strip()
+    if not text:
+        raise RuntimeError("SiliconFlow 返回空文本")
 
-    if result.status_code != HTTPStatus.OK:
-        raise RuntimeError(f"ASR transcription failed: {result.message}")
-
-    # 提取文本
-    text_parts = []
-    duration = 0
-    for r in result.output.results:
-        if r.subtask_status == 'SUCCEEDED':
-            transcript_url = r.transcription_url
-            if transcript_url:
-                text = await _fetch_transcript(transcript_url)
-                text_parts.append(text)
-            duration += r.duration or 0
-
-    combined_text = "\n".join(text_parts) if text_parts else "(转写为空)"
-    logger.info("ASR completed: taskId=%s, textLen=%d, duration=%ds",
-                task_id, len(combined_text), duration)
-    return combined_text, int(duration / 1000)  # 转为秒
-
-
-async def _fetch_transcript(url: str) -> str:
-    """下载转写结果 JSON，提取纯文本。"""
-    import httpx
-    async with httpx.AsyncClient(timeout=30) as client:
-        resp = await client.get(url)
-        resp.raise_for_status()
-        data = resp.json()
-        # DashScope 返回格式: {"transcripts": [{"text": "..."}, ...]}
-        if isinstance(data, dict) and "transcripts" in data:
-            return "".join(t.get("text", "") for t in data["transcripts"])
-        return str(data)
+    logger.info("SiliconFlow completed: textLen=%d, text=%s",
+                len(text), text[:80])
+    # duration 不精确，SenseVoice 不返回时长
+    return text, 0
 
 
 # ==================== Mock 引擎 ====================
