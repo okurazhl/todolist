@@ -4,6 +4,7 @@ import { createMemo, updateMemo, getMemo } from '../../shared/api/memos';
 import { listTags, type TagItem } from '../../shared/api/tags';
 import { listCategories, type CategoryItem } from '../../shared/api/categories';
 import { LoadingSpinner } from '../../shared/components/LoadingSpinner';
+import { refineContent } from '../../shared/api/ai';
 
 export function MemoEditorPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +19,7 @@ export function MemoEditorPage() {
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [refining, setRefining] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -76,6 +78,13 @@ export function MemoEditorPage() {
         <label>
           正文
           <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={8} maxLength={50000} />
+          <button type="button" className="btn-ai" disabled={refining || !content.trim()}
+            onClick={async () => { setRefining(true); setError('');
+              try { const refined = await refineContent(content); setContent(refined); }
+              catch { setError('AI 提炼失败'); } finally { setRefining(false); }
+            }}>
+            {refining ? '🤖 提炼中...' : '🤖 AI 提炼'}
+          </button>
         </label>
         <label>
           分类

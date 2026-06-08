@@ -57,6 +57,12 @@ spring:
           predicates:
             - Path=/api/v1/asr/**
 
+        # ===== AI 服务路由 =====
+        - id: ai-service
+          uri: http://localhost:8007
+          predicates:
+            - Path=/api/v1/ai/**
+
   # Redis 连接（限流用）
   data:
     redis:
