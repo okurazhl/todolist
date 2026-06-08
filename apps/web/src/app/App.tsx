@@ -9,6 +9,7 @@ import { MemoDetailPage } from '../features/memo/MemoDetailPage';
 import { TagManagePage } from '../features/tag/TagManagePage';
 import { CategoryManagePage } from '../features/category/CategoryManagePage';
 import { HealthPage } from '../features/health/HealthPage';
+import { VoiceUploadPage } from '../features/asr/VoiceUploadPage';
 
 function NavBar() {
   const { isLoggedIn, username, logout } = useAuthStore();
@@ -21,6 +22,7 @@ function NavBar() {
         {isLoggedIn ? (
           <>
             <RouterLink to="/">备忘录</RouterLink>
+            <RouterLink to="/voice">语音</RouterLink>
             <RouterLink to="/tags">标签</RouterLink>
             <RouterLink to="/categories">分类</RouterLink>
             <span className="nav-user">👤 {username}</span>
@@ -53,6 +55,7 @@ export function App() {
             <Route path="/memo/:id/edit" element={<ProtectedRoute><MemoEditorPage /></ProtectedRoute>} />
             <Route path="/tags" element={<ProtectedRoute><TagManagePage /></ProtectedRoute>} />
             <Route path="/categories" element={<ProtectedRoute><CategoryManagePage /></ProtectedRoute>} />
+            <Route path="/voice" element={<ProtectedRoute><VoiceUploadPage /></ProtectedRoute>} />
           </Routes>
         </main>
       </div>
