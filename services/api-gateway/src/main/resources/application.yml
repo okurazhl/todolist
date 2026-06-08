@@ -53,7 +53,7 @@ spring:
 
         # ===== ASR 服务路由 =====
         - id: asr-service
-          uri: http://localhost:8001
+          uri: http://localhost:8006
           predicates:
             - Path=/api/v1/asr/**
 
