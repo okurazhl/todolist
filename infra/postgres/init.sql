@@ -144,6 +144,7 @@ CREATE TABLE IF NOT EXISTS memos (
     category_id UUID,
     status      VARCHAR(16) NOT NULL DEFAULT 'active',
     is_pinned   BOOLEAN NOT NULL DEFAULT false,
+    remind_at   TIMESTAMPTZ,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by  UUID,

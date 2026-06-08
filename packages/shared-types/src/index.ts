@@ -160,6 +160,7 @@ export interface CreateMemoRequest {
   categoryId?: string;
   tagIds?: string[];
   isPinned?: boolean;
+  remindAt?: string;
 }
 
 export interface UpdateMemoRequest {
@@ -178,6 +179,7 @@ export interface MemoResponse {
   status: 'active' | 'archived' | 'deleted';
   isPinned: boolean;
   tagIds: string[];
+  remindAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

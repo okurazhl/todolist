@@ -29,13 +29,14 @@ public class MemoApplicationService {
     }
 
     @Transactional
-    public MemoResult create(UUID userId, String title, String content, UUID categoryId, List<UUID> tagIds, boolean pinned) {
+    public MemoResult create(UUID userId, String title, String content, UUID categoryId, List<UUID> tagIds, boolean pinned, Instant remindAt) {
         Memo memo = new Memo();
         memo.setUserId(userId);
         memo.setTitle(title);
         memo.setContent(content);
         memo.setCategoryId(categoryId);
         memo.setPinned(pinned);
+        memo.setRemindAt(remindAt);
         memo.setStatus(MemoStatus.active);
 
         Memo saved = memoRepository.save(memo);
@@ -130,11 +131,11 @@ public class MemoApplicationService {
 
     public record MemoResult(UUID id, UUID userId, String title, String content, UUID categoryId,
                               String status, boolean pinned, List<UUID> tagIds,
-                              Instant createdAt, Instant updatedAt) {
+                              Instant remindAt, Instant createdAt, Instant updatedAt) {
         public static MemoResult from(Memo m, List<UUID> tagIds) {
             return new MemoResult(m.getId(), m.getUserId(), m.getTitle(), m.getContent(),
                     m.getCategoryId(), m.getStatus().name(), m.isPinned(), tagIds,
-                    m.getCreatedAt(), m.getUpdatedAt());
+                    m.getRemindAt(), m.getCreatedAt(), m.getUpdatedAt());
         }
     }
 

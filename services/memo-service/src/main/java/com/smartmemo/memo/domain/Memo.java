@@ -31,6 +31,9 @@ public class Memo {
     @Column(name = "is_pinned", nullable = false)
     private boolean pinned;
 
+    @Column(name = "remind_at")
+    private Instant remindAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -83,6 +86,9 @@ public class Memo {
 
     public boolean isPinned() { return pinned; }
     public void setPinned(boolean pinned) { this.pinned = pinned; }
+
+    public Instant getRemindAt() { return remindAt; }
+    public void setRemindAt(Instant remindAt) { this.remindAt = remindAt; }
 
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }

@@ -112,22 +112,117 @@ config/       → 配置类、安全、OpenAPI
 
 ## 本地开发启动
 
-每次新会话或重启后，按以下顺序启动服务：
+每次新会话或重启后，必须按以下顺序启动 **8 个组件**（基础设施 + 4 后端 + 1 前端）。
+
+### 一键启动
 
 ```bash
-# 1. 基础设施（后台运行，通常不需要重启）
-cd infra && docker compose up -d
-
-# 2. 后端服务（需要 3 个终端窗口，各启动一个）
-cd services/user-service && ./gradlew bootRun   # 端口 8081
-cd services/memo-service && ./gradlew bootRun    # 端口 8082
-cd services/api-gateway && ./gradlew bootRun     # 端口 8080（统一入口）
-
-# 3. Web 前端
-cd apps/web && npm run dev                       # 端口 5173
+bash scripts/start-backend.sh   # 启动全部后端（基础设施 + Python + Java + 网关）
+bash scripts/stop-backend.sh    # 停止全部后端
 ```
 
-启动后浏览器访问 http://localhost:5173
+### 手动启动
+
+#### Phase 1: 基础设施（Docker，5 容器）
+
+```bash
+cd infra && docker compose up -d
+# 容器: postgres(5432) redis(6379) kafka(9092) elasticsearch(9200) minio(9000)
+# 验证: docker ps --format "table {{.Names}}\t{{.Status}}"
+```
+
+#### Phase 2: Python 服务（2 个）
+
+```bash
+# AI 语义服务 — 端口 8007，依赖 DeepSeek API
+cd services/ai-service
+python -m venv .venv && source .venv/Scripts/activate && pip install -r requirements.txt -q
+uvicorn app.main:app --host 0.0.0.0 --port 8007 &
+
+# ASR 语音转写服务 — 端口 8006，依赖 SiliconFlow API + MinIO
+cd services/asr-service
+python -m venv .venv && source .venv/Scripts/activate && pip install -r requirements.txt -q
+uvicorn app.main:app --host 0.0.0.0 --port 8006 &
+# Mock 模式（跳过真实 API 调用）: ASR_ENGINE_MOCK=true uvicorn ...
+
+# 验证: curl http://localhost:8007/actuator/health && curl http://localhost:8006/actuator/health
+```
+
+#### Phase 3: Java 服务（3 个）— Spring Boot
+
+> ⚠️ **gradlew 问题**: 项目 `gradlew` 脚本在 Windows 上损坏（内容为 "404: Not Found"），不能使用 `./gradlew`。
+> 改用缓存 Gradle 直接运行：
+> ```bash
+> GRADLE=~/.gradle/wrapper/dists/gradle-8.10-bin/*/gradle-8.10/bin/gradle
+> JAVA_HOME="/c/Program Files/Eclipse Adoptium/jdk-21.0.11.10-hotspot"
+> ```
+
+```bash
+# User Service — 端口 8081（先启动，Gateway 和 Memo 依赖它做鉴权）
+cd services/user-service && $GRADLE bootRun &
+
+# Memo Service — 端口 8082
+cd services/memo-service && $GRADLE bootRun &
+
+# API Gateway — 端口 8080（统一入口，最后启动）
+cd services/api-gateway && $GRADLE bootRun &
+
+# 验证: curl http://localhost:8081/actuator/health
+#       curl http://localhost:8082/actuator/health
+#       curl http://localhost:8080/api/v1/health
+```
+
+#### Phase 4: Web 前端
+
+```bash
+cd apps/web && npm run dev    # 端口 5173
+```
+
+### 服务端口总览
+
+| 服务 | 端口 | 技术 | 依赖 |
+|------|------|------|------|
+| PostgreSQL | 5432 | Docker | — |
+| Redis | 6379 | Docker | — |
+| Kafka | 9092 | Docker | Zookeeper |
+| Elasticsearch | 9200 | Docker | — |
+| MinIO | 9000 | Docker | — |
+| **AI Service** | **8007** | Python FastAPI | DeepSeek API |
+| **ASR Service** | **8006** | Python FastAPI | SiliconFlow API + MinIO |
+| **User Service** | **8081** | Java Spring Boot | PostgreSQL + Redis |
+| **Memo Service** | **8082** | Java Spring Boot | PostgreSQL + MinIO |
+| **API Gateway** | **8080** | Spring Cloud Gateway | 路由到以上所有服务 |
+| Web 前端 | 5173 | Vite + React | API Gateway |
+
+### 关键环境变量
+
+| 变量 | 服务 | 说明 |
+|------|------|------|
+| `DEEPSEEK_API_KEY` | AI Service | DeepSeek API 密钥 |
+| `SILICONFLOW_API_KEY` | ASR Service | 硅基流动 API 密钥 |
+| `ASR_ENGINE_MOCK=true` | ASR Service | 使用 Mock 引擎（开发测试用） |
+| `JAVA_HOME` | Java 服务 | 指向 JDK 21 安装路径 |
+
+环境变量定义在 `services/.env` 和各服务的 `app/core/config.py` 中。
+
+### 启动验证脚本
+
+```bash
+# 逐一检查所有服务健康状态
+curl -s http://localhost:8007/actuator/health  # AI Service
+curl -s http://localhost:8006/actuator/health  # ASR Service
+curl -s http://localhost:8081/actuator/health  # User Service
+curl -s http://localhost:8082/actuator/health  # Memo Service
+curl -s http://localhost:8080/api/v1/health    # API Gateway
+```
+
+### 常见问题
+
+1. **gradlew 404 错误** — 使用缓存 Gradle（路径见上方 Phase 3）
+2. **端口被占用** — `netstat -ano | grep ":8006 "` 查 PID，`taskkill //F //PID <PID>` 停止
+3. **Python venv 不存在** — 脚本自动创建，或手动执行 Phase 2 的 venv 创建命令
+4. **ASR 返回 Mock 结果** — 检查是否设置了 `ASR_ENGINE_MOCK=true`，去掉即可使用真实引擎
+5. **AI/ASR 服务 401** — 请求头需要 `X-User-Id`（直接调用）或 `Authorization: Bearer <token>`（经 Gateway）
 
 ## 对话语言
 

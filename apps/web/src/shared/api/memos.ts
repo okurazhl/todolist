@@ -8,6 +8,7 @@ export interface MemoItem {
   status: 'active' | 'archived' | 'deleted';
   isPinned: boolean;
   tagIds: string[];
+  remindAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -40,6 +41,7 @@ export async function createMemo(data: {
   categoryId?: string;
   tagIds?: string[];
   isPinned?: boolean;
+  remindAt?: string;
 }): Promise<MemoItem> {
   const res = await apiClient.post<ApiResponse<MemoItem>>('/memos', data);
   return res.data.data;

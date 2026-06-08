@@ -1,5 +1,4 @@
-import { BrowserRouter, Routes, Route, Link as RouterLink, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../features/auth/AuthStore';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ProtectedRoute } from '../features/auth/ProtectedRoute';
 import { LoginPage } from '../features/auth/LoginPage';
 import { RegisterPage } from '../features/auth/RegisterPage';
@@ -9,56 +8,26 @@ import { MemoDetailPage } from '../features/memo/MemoDetailPage';
 import { TagManagePage } from '../features/tag/TagManagePage';
 import { CategoryManagePage } from '../features/category/CategoryManagePage';
 import { HealthPage } from '../features/health/HealthPage';
-import { VoiceUploadPage } from '../features/asr/VoiceUploadPage';
-
-function NavBar() {
-  const { isLoggedIn, username, logout } = useAuthStore();
-  const navigate = useNavigate();
-
-  return (
-    <header className="app-header">
-      <h1><RouterLink to="/">📝 智能备忘录</RouterLink></h1>
-      <nav>
-        {isLoggedIn ? (
-          <>
-            <RouterLink to="/">备忘录</RouterLink>
-            <RouterLink to="/voice">语音</RouterLink>
-            <RouterLink to="/tags">标签</RouterLink>
-            <RouterLink to="/categories">分类</RouterLink>
-            <span className="nav-user">👤 {username}</span>
-            <button onClick={() => { logout(); navigate('/login'); }}>退出</button>
-          </>
-        ) : (
-          <>
-            <RouterLink to="/login">登录</RouterLink>
-            <RouterLink to="/health">系统状态</RouterLink>
-          </>
-        )}
-      </nav>
-    </header>
-  );
-}
+import { NaturalLanguageMemoPage } from '../features/nl-memo/NaturalLanguageMemoPage';
+import { AppLayout } from './AppLayout';
 
 export function App() {
   return (
     <BrowserRouter>
-      <div className="app">
-        <NavBar />
-        <main className="app-main">
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/health" element={<HealthPage />} />
-            <Route path="/" element={<ProtectedRoute><MemoListPage /></ProtectedRoute>} />
-            <Route path="/memo/new" element={<ProtectedRoute><MemoEditorPage /></ProtectedRoute>} />
-            <Route path="/memo/:id" element={<ProtectedRoute><MemoDetailPage /></ProtectedRoute>} />
-            <Route path="/memo/:id/edit" element={<ProtectedRoute><MemoEditorPage /></ProtectedRoute>} />
-            <Route path="/tags" element={<ProtectedRoute><TagManagePage /></ProtectedRoute>} />
-            <Route path="/categories" element={<ProtectedRoute><CategoryManagePage /></ProtectedRoute>} />
-            <Route path="/voice" element={<ProtectedRoute><VoiceUploadPage /></ProtectedRoute>} />
-          </Routes>
-        </main>
-      </div>
+      <AppLayout>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/health" element={<HealthPage />} />
+          <Route path="/" element={<ProtectedRoute><MemoListPage /></ProtectedRoute>} />
+          <Route path="/memo/new" element={<ProtectedRoute><MemoEditorPage /></ProtectedRoute>} />
+          <Route path="/memo/nl" element={<ProtectedRoute><NaturalLanguageMemoPage /></ProtectedRoute>} />
+          <Route path="/memo/:id" element={<ProtectedRoute><MemoDetailPage /></ProtectedRoute>} />
+          <Route path="/memo/:id/edit" element={<ProtectedRoute><MemoEditorPage /></ProtectedRoute>} />
+          <Route path="/tags" element={<ProtectedRoute><TagManagePage /></ProtectedRoute>} />
+          <Route path="/categories" element={<ProtectedRoute><CategoryManagePage /></ProtectedRoute>} />
+        </Routes>
+      </AppLayout>
     </BrowserRouter>
   );
 }

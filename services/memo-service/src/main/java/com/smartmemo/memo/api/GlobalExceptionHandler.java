@@ -30,7 +30,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleException(Exception ex) {
         String traceId = UUID.randomUUID().toString();
         log.error("Unhandled exception: traceId={}", traceId, ex);
+        String msg = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("code", "SYS_ERROR", "message", ex.getMessage(), "data", null, "traceId", traceId));
+                .body(Map.of("code", "SYS_ERROR", "message", msg, "data", "", "traceId", traceId));
     }
 }

@@ -27,7 +27,7 @@ public class MemoController {
                                                        @Valid @RequestBody CreateMemoRequest req) {
         UUID userId = UUID.fromString(userIdStr);
         MemoResult result = memoService.create(userId, req.title(), req.content(),
-                req.categoryId(), req.tagIds(), req.isPinned());
+                req.categoryId(), req.tagIds(), req.isPinned(), req.remindAt());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(Map.of("code", "OK", "message", "success", "data", toResponse(result), "traceId", traceId()));
     }
@@ -39,7 +39,7 @@ public class MemoController {
         return memoService.getById(memoId, userId)
                 .map(r -> ResponseEntity.ok(Map.of("code", "OK", "message", "success", "data", toResponse(r), "traceId", traceId())))
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("code", "MEMO_NOT_FOUND", "message", "备忘录不存在", "data", null, "traceId", traceId())));
+                        .body(Map.of("code", "MEMO_NOT_FOUND", "message", "备忘录不存在", "data", "", "traceId", traceId())));
     }
 
     @GetMapping
@@ -65,7 +65,7 @@ public class MemoController {
                         req.tagIds(), req.isPinned())
                 .map(r -> ResponseEntity.ok(Map.of("code", "OK", "message", "success", "data", toResponse(r), "traceId", traceId())))
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("code", "MEMO_NOT_FOUND", "message", "备忘录不存在", "data", null, "traceId", traceId())));
+                        .body(Map.of("code", "MEMO_NOT_FOUND", "message", "备忘录不存在", "data", "", "traceId", traceId())));
     }
 
     @DeleteMapping("/{memoId}")
@@ -73,9 +73,9 @@ public class MemoController {
                                                        @PathVariable UUID memoId) {
         UUID userId = UUID.fromString(userIdStr);
         return memoService.delete(memoId, userId)
-                ? ResponseEntity.ok(Map.of("code", "OK", "message", "success", "data", null, "traceId", traceId()))
+                ? ResponseEntity.ok(Map.of("code", "OK", "message", "success", "data", "", "traceId", traceId()))
                 : ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("code", "MEMO_NOT_FOUND", "message", "备忘录不存在", "data", null, "traceId", traceId()));
+                        .body(Map.of("code", "MEMO_NOT_FOUND", "message", "备忘录不存在", "data", "", "traceId", traceId()));
     }
 
     @PostMapping("/{memoId}/pin")
@@ -112,12 +112,12 @@ public class MemoController {
 
     private static MemoResponse toResponse(MemoResult r) {
         return new MemoResponse(r.id(), r.title(), r.content(), r.categoryId(),
-                r.status(), r.pinned(), r.tagIds(), r.createdAt(), r.updatedAt());
+                r.status(), r.pinned(), r.tagIds(), r.remindAt(), r.createdAt(), r.updatedAt());
     }
 
     private ResponseEntity<Map<String, Object>> notFound() {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of("code", "MEMO_NOT_FOUND", "message", "备忘录不存在", "data", null, "traceId", traceId()));
+                .body(Map.of("code", "MEMO_NOT_FOUND", "message", "备忘录不存在", "data", "", "traceId", traceId()));
     }
 
     private static String traceId() { return UUID.randomUUID().toString(); }

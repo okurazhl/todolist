@@ -47,6 +47,9 @@
       "Bash(python3 -c ' *)",
       "Bash(curl -s --connect-timeout 3 http://localhost:17039/api/health)",
       "Bash(curl -s --connect-timeout 3 -H \"x-auth-password: bobh888888\" http://localhost:17039/api/health)"
+    ],
+    "ask": [
+      "no more ask for use"
     ]
   }
 }

@@ -12,6 +12,7 @@ public record MemoResponse(
         String status,
         boolean isPinned,
         List<UUID> tagIds,
+        Instant remindAt,
         Instant createdAt,
         Instant updatedAt
 ) {}
