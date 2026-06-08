@@ -47,12 +47,16 @@ async def _siliconflow_transcribe(object_key: str) -> tuple[str, int]:
     logger.info("Submitting to SiliconFlow: object=%s, size=%d, model=%s",
                 object_key, len(audio_bytes), SILICONFLOW_MODEL)
 
+    # 根据 object_key 推测文件扩展名
+    ext = "webm" if object_key.endswith(".webm") else "wav"
+    mime = "audio/webm" if ext == "webm" else "audio/wav"
+
     # 提交文件到 SiliconFlow
     async with httpx.AsyncClient(timeout=30) as http:
         resp = await http.post(
             SILICONFLOW_ASR_URL,
             headers={"Authorization": f"Bearer {SILICONFLOW_API_KEY}"},
-            files={"file": ("audio.wav", audio_bytes, "audio/wav")},
+            files={"file": (f"audio.{ext}", audio_bytes, mime)},
             data={"model": SILICONFLOW_MODEL},
         )
 
@@ -65,7 +69,7 @@ async def _siliconflow_transcribe(object_key: str) -> tuple[str, int]:
     result = resp.json()
     text = result.get("text", "").strip()
     if not text:
-        raise RuntimeError("SiliconFlow 返回空文本")
+        raise RuntimeError(f"SiliconFlow 返回空文本, raw={resp.text[:200]}")
 
     logger.info("SiliconFlow completed: textLen=%d, text=%s",
                 len(text), text[:80])
