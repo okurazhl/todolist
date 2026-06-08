@@ -55,8 +55,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 3. ✅ 备忘录 CRUD + 标签 + 分类 + 附件（已完成：2026-06-06）
 4. ✅ Flutter / Web 基础页面（已完成：2026-06-07）
 5. ✅ ASR 任务创建 + 录音上传 + 转写回填（已完成：2026-06-07）
-6. **AI 摘要 + 标签推荐 + 待办提取** ← 当前步骤
-7. 基础增量同步 + WebSocket 通知
+6. ✅ AI 语义提炼（已完成：2026-06-08）
+7. **基础增量同步 + WebSocket 通知** ← 当前步骤
+8. 推送服务基础能力
 8. 推送服务基础能力
 9. 蓝牙设备绑定 + 数据上报 MVP
 10. 测试 + 灰度 + 上线 + 监控
