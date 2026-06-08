@@ -96,9 +96,15 @@ button, .btn-primary, .btn-secondary, .btn-danger, .btn-back, .btn-small-danger 
 /* ===== Voice ===== */
 .voice-page { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 .voice-page h2 { margin-bottom: 1.5rem; }
-.voice-upload-area { text-align: center; padding: 3rem 1rem; }
-.voice-upload-area p { color: #888; margin-bottom: 1rem; }
-.voice-upload-area input { font-size: 1rem; }
+.voice-record-area { text-align: center; padding: 2rem; }
+.voice-idle p { margin-bottom: 1.5rem; }
+.voice-start-btn { font-size: 1.2rem !important; padding: 1rem 2rem !important; border-radius: 50px !important; }
+.voice-sub-hint { color: #aaa; font-size: 0.8rem; margin-top: 0.5rem; }
+.voice-recording { }
+.voice-mic-icon { font-size: 4rem; animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.1); } }
+.voice-timer { font-size: 2.5rem; font-weight: 700; font-variant-numeric: tabular-nums; margin: 0.5rem 0; color: #e74c3c; }
+.voice-hint { color: #888; margin-bottom: 1.5rem; }
 .voice-status { display: inline-block; padding: 0.3rem 0.75rem; border-radius: 4px; font-weight: 600; margin: 0.5rem 0; }
 .voice-task-card { margin-top: 1rem; }
 .voice-meta { color: #888; font-size: 0.85rem; display: flex; gap: 1rem; margin: 0.5rem 0; }

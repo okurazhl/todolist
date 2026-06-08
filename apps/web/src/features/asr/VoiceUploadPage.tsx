@@ -1,29 +1,70 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { uploadAudio, getTask, type AsrTask } from '../../shared/api/asr';
 import { createMemo } from '../../shared/api/memos';
 
 export function VoiceUploadPage() {
+  const [recording, setRecording] = useState(false);
   const [task, setTask] = useState<AsrTask | null>(null);
-  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [elapsed, setElapsed] = useState(0);
+  const mediaRecorder = useRef<MediaRecorder | null>(null);
+  const chunks = useRef<Blob[]>([]);
+  const timerRef = useRef<number>(0);
   const navigate = useNavigate();
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  // ===== 开始录音 =====
+  const startRecording = useCallback(async () => {
     setError('');
-    setUploading(true);
     setTask(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus'
+          : 'audio/webm',
+      });
+      mediaRecorder.current = recorder;
+      chunks.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.current.push(e.data);
+      };
+
+      recorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+      };
+
+      recorder.start(1000); // 每秒收集一次数据
+      setRecording(true);
+      setElapsed(0);
+
+      timerRef.current = window.setInterval(() => {
+        setElapsed((prev) => prev + 1);
+      }, 1000);
+    } catch {
+      setError('无法访问麦克风，请检查浏览器权限');
+    }
+  }, []);
+
+  // ===== 停止录音并转写 =====
+  const stopRecording = useCallback(async () => {
+    if (!mediaRecorder.current) return;
+
+    mediaRecorder.current.stop();
+    clearInterval(timerRef.current);
+    setRecording(false);
+
+    // 等待 onstop 完成
+    await new Promise((r) => setTimeout(r, 200));
+
+    const blob = new Blob(chunks.current, { type: 'audio/webm' });
+    const file = new File([blob], `recording-${Date.now()}.webm`, { type: 'audio/webm' });
 
     try {
-      // 1. 上传 + 创建任务
       const created = await uploadAudio(file);
       setTask(created);
 
-      // 2. 轮询状态
       let current = created;
       while (current.status === 'pending' || current.status === 'processing') {
         await new Promise((r) => setTimeout(r, 2000));
@@ -31,12 +72,11 @@ export function VoiceUploadPage() {
         setTask({ ...current });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : '上传失败');
-    } finally {
-      setUploading(false);
+      setError(err instanceof Error ? err.message : '转写失败');
     }
-  };
+  }, []);
 
+  // ===== 创建备忘录 =====
   const createFromAudio = async () => {
     if (!task?.transcribedText) return;
     try {
@@ -46,9 +86,12 @@ export function VoiceUploadPage() {
       });
       navigate(`/memo/${memo.id}`);
     } catch {
-      setError('创建备忘录失败');
+      setError('创建失败');
     }
   };
+
+  // ===== 格式化时间 =====
+  const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
   const statusLabel = (s: string) => {
     switch (s) {
@@ -65,16 +108,25 @@ export function VoiceUploadPage() {
       <h2>语音录入</h2>
 
       {!task && (
-        <div className="voice-upload-area">
-          <p>选择音频文件上传，自动转写为文字</p>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="audio/*"
-            onChange={handleFile}
-            disabled={uploading}
-          />
-          {uploading && <p className="voice-status">⏳ 上传中...</p>}
+        <div className="voice-record-area">
+          {recording ? (
+            <div className="voice-recording">
+              <div className="voice-mic-icon">🎙️</div>
+              <div className="voice-timer">{fmt(elapsed)}</div>
+              <p className="voice-hint">正在录音...</p>
+              <button className="btn-danger" onClick={stopRecording}>
+                ⏹ 停止录音
+              </button>
+            </div>
+          ) : (
+            <div className="voice-idle">
+              <p>点击下方按钮开始录音，说完后停止即可自动转写</p>
+              <button className="btn-primary voice-start-btn" onClick={startRecording}>
+                🎙️ 开始录音
+              </button>
+              <p className="voice-sub-hint">需要授权麦克风权限</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -102,7 +154,7 @@ export function VoiceUploadPage() {
                   创建备忘录
                 </button>
                 <button className="btn-secondary" onClick={() => setTask(null)}>
-                  重新上传
+                  重新录音
                 </button>
               </div>
             </div>
