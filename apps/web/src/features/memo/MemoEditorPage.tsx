@@ -21,6 +21,7 @@ export function MemoEditorPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [remindAt, setRemindAt] = useState('');
 
   // 录音
   const [recording, setRecording] = useState(false);
@@ -43,6 +44,7 @@ export function MemoEditorPage() {
         setContent(memo.content || '');
         setCategoryId(memo.categoryId || '');
         setSelectedTags(memo.tagIds || []);
+        setRemindAt(memo.remindAt ? memo.remindAt.slice(0, 16) : '');
       }).catch(() => setError('加载失败')).finally(() => setLoading(false));
     }
   }, [id, isEdit]);
@@ -52,7 +54,8 @@ export function MemoEditorPage() {
     setError('');
     setSaving(true);
     try {
-      const data = { title, content: content || undefined, categoryId: categoryId || undefined, tagIds: selectedTags };
+      const data = { title, content: content || undefined, categoryId: categoryId || undefined, tagIds: selectedTags,
+        remindAt: remindAt ? remindAt + ':00+08:00' : undefined };
       if (isEdit && id) { await updateMemo(id, data); }
       else { await createMemo(data); }
       navigate('/');
@@ -154,6 +157,11 @@ export function MemoEditorPage() {
             <option value="">无分类</option>
             {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
+        </label>
+        <label>
+          提醒时间
+          <input type="datetime-local" value={remindAt}
+            onChange={(e) => setRemindAt(e.target.value)} />
         </label>
         <div className="tag-selector">
           <span>标签：</span>

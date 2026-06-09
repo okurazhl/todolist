@@ -4,6 +4,7 @@ import com.smartmemo.memo.domain.Memo;
 import com.smartmemo.memo.domain.MemoStatus;
 import com.smartmemo.memo.infrastructure.persistence.MemoRepository;
 import com.smartmemo.memo.infrastructure.persistence.MemoTagRelationRepository;
+import com.smartmemo.memo.infrastructure.sync.SyncNotifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -22,10 +23,13 @@ public class MemoApplicationService {
 
     private final MemoRepository memoRepository;
     private final MemoTagRelationRepository tagRelationRepository;
+    private final SyncNotifier syncNotifier;
 
-    public MemoApplicationService(MemoRepository memoRepository, MemoTagRelationRepository tagRelationRepository) {
+    public MemoApplicationService(MemoRepository memoRepository, MemoTagRelationRepository tagRelationRepository,
+                                   SyncNotifier syncNotifier) {
         this.memoRepository = memoRepository;
         this.tagRelationRepository = tagRelationRepository;
+        this.syncNotifier = syncNotifier;
     }
 
     @Transactional
@@ -44,6 +48,7 @@ public class MemoApplicationService {
             tagRelationRepository.replaceRelations(saved.getId(), tagIds);
         }
         log.info("Memo created: id={}, userId={}", saved.getId(), userId);
+        syncNotifier.notifyChanged(userId, saved.getId(), "memo_created");
         return MemoResult.from(saved, tagIds);
     }
 
@@ -63,6 +68,7 @@ public class MemoApplicationService {
             tagRelationRepository.replaceRelations(memoId, tagIds);
         }
         List<UUID> currentTagIds = tagRelationRepository.findTagIdsByMemoId(memoId);
+        syncNotifier.notifyChanged(userId, memoId, "memo_updated");
         return Optional.of(MemoResult.from(memo, currentTagIds));
     }
 
@@ -73,6 +79,7 @@ public class MemoApplicationService {
         memo.setStatus(MemoStatus.deleted);
         memo.setDeletedAt(Instant.now());
         memoRepository.save(memo);
+        syncNotifier.notifyChanged(userId, memoId, "memo_deleted");
         return true;
     }
 
@@ -81,32 +88,6 @@ public class MemoApplicationService {
         if (memo == null) return Optional.empty();
         List<UUID> tagIds = tagRelationRepository.findTagIdsByMemoId(memoId);
         return Optional.of(MemoResult.from(memo, tagIds));
-    }
-
-    public ListResult list(UUID userId, String status, UUID categoryId, UUID tagId, String cursor, int limit) {
-        List<Memo> memos;
-        if (tagId != null) {
-            memos = memoRepository.findByUserIdAndTag(userId, tagId, PageRequest.of(0, limit + 1));
-        } else if (categoryId != null) {
-            memos = memoRepository.findByUserIdAndCategory(userId, categoryId, PageRequest.of(0, limit + 1));
-        } else if (status != null) {
-            MemoStatus ms = MemoStatus.valueOf(status);
-            memos = memoRepository.findByUserIdAndStatus(userId, ms, PageRequest.of(0, limit + 1));
-        } else {
-            memos = memoRepository.findByUserIdCursor(userId, cursor, PageRequest.of(0, limit + 1));
-        }
-
-        boolean hasMore = memos.size() > limit;
-        if (hasMore) memos = memos.subList(0, limit);
-
-        List<MemoResult> items = memos.stream()
-                .map(m -> MemoResult.from(m, tagRelationRepository.findTagIdsByMemoId(m.getId())))
-                .toList();
-
-        String nextCursor = items.isEmpty() ? null
-                : items.get(items.size() - 1).updatedAt().toString();
-
-        return new ListResult(items, nextCursor, hasMore);
     }
 
     @Transactional
@@ -137,6 +118,53 @@ public class MemoApplicationService {
                     m.getCategoryId(), m.getStatus().name(), m.isPinned(), tagIds,
                     m.getRemindAt(), m.getCreatedAt(), m.getUpdatedAt());
         }
+    }
+
+    @Transactional
+    public Optional<MemoResult> complete(UUID memoId, UUID userId, boolean completed) {
+        Memo memo = memoRepository.findByIdAndUserId(memoId, userId).orElse(null);
+        if (memo == null) return Optional.empty();
+        memo.setStatus(completed ? MemoStatus.completed : MemoStatus.active);
+        memoRepository.save(memo);
+        syncNotifier.notifyChanged(userId, memoId, completed ? "memo_completed" : "memo_reactivated");
+        List<UUID> tagIds = tagRelationRepository.findTagIdsByMemoId(memoId);
+        return Optional.of(MemoResult.from(memo, tagIds));
+    }
+
+    public long countReminders(UUID userId) {
+        return memoRepository.countUpcomingReminders(userId);
+    }
+
+    public ListResult list(UUID userId, String status, UUID categoryId, UUID tagId,
+                            String cursor, String remindBefore, int limit) {
+        List<Memo> memos;
+        if (tagId != null) {
+            memos = memoRepository.findByUserIdAndTag(userId, tagId, PageRequest.of(0, limit + 1));
+        } else if (categoryId != null) {
+            memos = memoRepository.findByUserIdAndCategory(userId, categoryId, PageRequest.of(0, limit + 1));
+        } else if (remindBefore != null) {
+            Instant before = Instant.parse(remindBefore);
+            memos = memoRepository.findByUserIdAndRemindBefore(userId, before, PageRequest.of(0, limit + 1));
+        } else if (status != null) {
+            MemoStatus ms = MemoStatus.valueOf(status);
+            memos = memoRepository.findByUserIdAndStatus(userId, ms, PageRequest.of(0, limit + 1));
+        } else if (cursor != null && !cursor.isEmpty()) {
+            memos = memoRepository.findByUserIdAndCursor(userId, Instant.parse(cursor), PageRequest.of(0, limit + 1));
+        } else {
+            memos = memoRepository.findByUserId(userId, PageRequest.of(0, limit + 1));
+        }
+
+        boolean hasMore = memos.size() > limit;
+        if (hasMore) memos = memos.subList(0, limit);
+
+        List<MemoResult> items = memos.stream()
+                .map(m -> MemoResult.from(m, tagRelationRepository.findTagIdsByMemoId(m.getId())))
+                .toList();
+
+        String nextCursor = items.isEmpty() ? null
+                : items.get(items.size() - 1).updatedAt().toString();
+
+        return new ListResult(items, nextCursor, hasMore);
     }
 
     public record ListResult(List<MemoResult> items, String nextCursor, boolean hasMore) {}

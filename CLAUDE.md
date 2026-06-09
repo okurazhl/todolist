@@ -58,7 +58,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 6. ✅ AI 语义提炼（已完成：2026-06-08）
 7. **基础增量同步 + WebSocket 通知** ← 当前步骤
 8. 推送服务基础能力
-8. 推送服务基础能力
 9. 蓝牙设备绑定 + 数据上报 MVP
 10. 测试 + 灰度 + 上线 + 监控
 

@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -31,7 +32,20 @@ public interface MemoRepository extends JpaRepository<Memo, UUID> {
     Optional<Memo> findByIdAndUserId(@Param("id") UUID id, @Param("userId") UUID userId);
 
     @Query("SELECT m FROM Memo m WHERE m.userId = :userId AND m.deletedAt IS NULL " +
-            "AND (:cursor IS NULL OR m.updatedAt < cast(:cursor as timestamp)) " +
             "ORDER BY m.pinned DESC, m.updatedAt DESC")
-    List<Memo> findByUserIdCursor(@Param("userId") UUID userId, @Param("cursor") String cursor, Pageable pageable);
+    List<Memo> findByUserId(@Param("userId") UUID userId, Pageable pageable);
+
+    @Query("SELECT m FROM Memo m WHERE m.userId = :userId AND m.deletedAt IS NULL " +
+            "AND m.updatedAt < :cursor " +
+            "ORDER BY m.pinned DESC, m.updatedAt DESC")
+    List<Memo> findByUserIdAndCursor(@Param("userId") UUID userId, @Param("cursor") Instant cursor, Pageable pageable);
+
+    @Query("SELECT m FROM Memo m WHERE m.userId = :userId AND m.deletedAt IS NULL " +
+            "AND m.remindAt IS NOT NULL AND m.remindAt <= :before " +
+            "ORDER BY m.remindAt DESC")
+    List<Memo> findByUserIdAndRemindBefore(@Param("userId") UUID userId, @Param("before") Instant before, Pageable pageable);
+
+    @Query("SELECT count(m) FROM Memo m WHERE m.userId = :userId AND m.deletedAt IS NULL " +
+            "AND m.status = 'active' AND m.remindAt IS NOT NULL AND m.remindAt >= CURRENT_TIMESTAMP")
+    long countUpcomingReminders(@Param("userId") UUID userId);
 }

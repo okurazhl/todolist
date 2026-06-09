@@ -44,13 +44,14 @@ public class MemoController {
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> list(@RequestAttribute("userId") String userIdStr,
-                                                     @RequestParam(defaultValue = "active") String status,
+                                                     @RequestParam(required = false) String status,
                                                      @RequestParam(required = false) UUID categoryId,
                                                      @RequestParam(required = false) UUID tagId,
                                                      @RequestParam(required = false) String cursor,
+                                                     @RequestParam(required = false) String remindBefore,
                                                      @RequestParam(defaultValue = "20") int limit) {
         UUID userId = UUID.fromString(userIdStr);
-        var result = memoService.list(userId, status, categoryId, tagId, cursor, Math.min(limit, 50));
+        var result = memoService.list(userId, status, categoryId, tagId, cursor, remindBefore, Math.min(limit, 50));
         List<MemoResponse> items = result.items().stream().map(MemoController::toResponse).toList();
         return ResponseEntity.ok(Map.of("code", "OK", "message", "success",
                 "data", new MemoListResponse(items, result.nextCursor(), result.hasMore()), "traceId", traceId()));
@@ -108,6 +109,30 @@ public class MemoController {
         return memoService.archive(memoId, UUID.fromString(userIdStr), false)
                 .map(r -> ResponseEntity.ok(Map.of("code", "OK", "message", "success", "data", toResponse(r), "traceId", traceId())))
                 .orElse(notFound());
+    }
+
+    @PostMapping("/{memoId}/complete")
+    public ResponseEntity<Map<String, Object>> complete(@RequestAttribute("userId") String userIdStr,
+                                                         @PathVariable UUID memoId) {
+        return memoService.complete(memoId, UUID.fromString(userIdStr), true)
+                .map(r -> ResponseEntity.ok(Map.of("code", "OK", "message", "success", "data", toResponse(r), "traceId", traceId())))
+                .orElse(notFound());
+    }
+
+    @DeleteMapping("/{memoId}/complete")
+    public ResponseEntity<Map<String, Object>> uncomplete(@RequestAttribute("userId") String userIdStr,
+                                                           @PathVariable UUID memoId) {
+        return memoService.complete(memoId, UUID.fromString(userIdStr), false)
+                .map(r -> ResponseEntity.ok(Map.of("code", "OK", "message", "success", "data", toResponse(r), "traceId", traceId())))
+                .orElse(notFound());
+    }
+
+    @GetMapping("/reminder-count")
+    public ResponseEntity<Map<String, Object>> reminderCount(@RequestAttribute("userId") String userIdStr) {
+        UUID userId = UUID.fromString(userIdStr);
+        long count = memoService.countReminders(userId);
+        return ResponseEntity.ok(Map.of("code", "OK", "message", "success",
+                "data", Map.of("count", count), "traceId", traceId()));
     }
 
     private static MemoResponse toResponse(MemoResult r) {

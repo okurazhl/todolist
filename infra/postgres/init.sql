@@ -203,3 +203,33 @@ CREATE TABLE IF NOT EXISTS asr_tasks (
 );
 CREATE INDEX IF NOT EXISTS idx_asr_tasks_user_id ON asr_tasks (user_id);
 CREATE INDEX IF NOT EXISTS idx_asr_tasks_status ON asr_tasks (user_id, status);
+
+-- =============================================
+-- MVP Step 7: 同步游标表
+-- =============================================
+CREATE TABLE IF NOT EXISTS sync_cursors (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id     UUID NOT NULL REFERENCES users(id),
+    cursor      VARCHAR(64) NOT NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_sync_cursors_user_id ON sync_cursors (user_id);
+CREATE TRIGGER update_sync_cursors_updated_at
+    BEFORE UPDATE ON sync_cursors FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- =============================================
+-- MVP Step 8: 推送消息表
+-- =============================================
+CREATE TABLE IF NOT EXISTS push_messages (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id     UUID NOT NULL REFERENCES users(id),
+    memo_id     UUID,
+    type        VARCHAR(32) NOT NULL,
+    title       VARCHAR(256) NOT NULL,
+    body        TEXT,
+    is_read     BOOLEAN NOT NULL DEFAULT false,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_push_messages_user_id ON push_messages (user_id, is_read, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_push_messages_memo_type ON push_messages (memo_id, type);

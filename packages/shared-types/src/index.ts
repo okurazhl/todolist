@@ -176,7 +176,7 @@ export interface MemoResponse {
   title: string;
   content: string | null;
   categoryId: string | null;
-  status: 'active' | 'archived' | 'deleted';
+  status: 'active' | 'archived' | 'deleted' | 'completed';
   isPinned: boolean;
   tagIds: string[];
   remindAt: string | null;

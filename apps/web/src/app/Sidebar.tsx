@@ -1,19 +1,28 @@
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../features/auth/AuthStore';
+import { getReminderCount } from '../shared/api/memos';
 
 const NAV_ITEMS = [
   { icon: '🏠', label: '首页', to: '/' },
-  { icon: '📄', label: '全部备忘录', to: '/' },
-  { icon: '🔔', label: '提醒', to: '/', badge: 3 },
-  { icon: '📅', label: '今天', to: '/' },
-  { icon: '⏳', label: '待办', to: '/' },
-  { icon: '✅', label: '已完成', to: '/' },
-  { icon: '🗑️', label: '回收站', to: '/' },
+  { icon: '📄', label: '全部备忘录', to: '/?status=active' },
+  { icon: '🔔', label: '提醒', to: '/?status=active&remindBefore=now', badgeKey: 'reminders' },
+  { icon: '📅', label: '今天', to: '/?remindBefore=today' },
+  { icon: '⏳', label: '待办', to: '/?status=active' },
+  { icon: '✅', label: '已完成', to: '/?status=completed' },
+  { icon: '🗑️', label: '回收站', to: '/?status=deleted' },
 ];
 
 export function Sidebar() {
   const { username, logout } = useAuthStore();
   const navigate = useNavigate();
+  const [reminderCount, setReminderCount] = useState(0);
+
+  useEffect(() => {
+    if (username) {
+      getReminderCount().then(setReminderCount).catch(() => {});
+    }
+  }, [username]);
 
   const handleUserClick = () => {
     if (username) {
@@ -45,7 +54,9 @@ export function Sidebar() {
           <Link key={item.label} to={item.to} className="sidebar-nav-item">
             <span className="nav-icon">{item.icon}</span>
             <span>{item.label}</span>
-            {item.badge && <span className="nav-badge">{item.badge}</span>}
+            {item.badgeKey === 'reminders' && reminderCount > 0 && (
+              <span className="nav-badge">{reminderCount}</span>
+            )}
           </Link>
         ))}
       </nav>

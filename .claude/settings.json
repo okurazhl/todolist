@@ -46,10 +46,16 @@
       "Bash(pip3 install *)",
       "Bash(python3 -c ' *)",
       "Bash(curl -s --connect-timeout 3 http://localhost:17039/api/health)",
-      "Bash(curl -s --connect-timeout 3 -H \"x-auth-password: bobh888888\" http://localhost:17039/api/health)"
+      "Bash(curl -s --connect-timeout 3 -H \"x-auth-password: bobh888888\" http://localhost:17039/api/health)",
+      "Bash(python -c \"import py_compile; py_compile.compile\\('main.py', doraise=True\\); print\\('Syntax OK'\\)\")",
+      "Bash(python main.py)",
+      "Bash(echo \"PID: $!\")",
+      "Bash(python -c \"import py_compile; py_compile.compile\\('main.py', doraise=True\\); print\\('OK'\\)\")",
+      "Bash(taskkill //F //IM python.exe)"
     ],
-    "ask": [
-      "no more ask for use"
+    "ask": [],
+    "additionalDirectories": [
+      "C:\\Users\\okura\\Documents\\Todolist"
     ]
   }
 }

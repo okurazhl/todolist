@@ -1,0 +1,137 @@
+/* ==========================================
+   SmartMemo Dark Theme
+   匹配 Tkinter 桌面端风格: #182334 dark navy
+   ========================================== */
+
+:root {
+  --bg: #182334; --panel: #223445; --panel2: #2B4153;
+  --text: #EEF7FF; --muted: #B8C7D6; --accent: #45D4C4;
+  --accent-dark: #1D6F72; --red: #FF6F6B; --yellow: #FFD35C;
+  --green: #62D58C; --line: #3B5063;
+}
+
+body { background: #182334 !important; color: #EEF7FF !important; }
+.app-layout { background: #182334; }
+
+.sidebar { background: #132131 !important; border-right-color: #2B4153 !important; }
+.sidebar-brand-name { color: #EEF7FF !important; }
+.sidebar-nav-item { color: #B8C7D6 !important; }
+.sidebar-nav-item:hover { background: #223445 !important; color: #EEF7FF !important; }
+.sidebar-btn-new { background: #223445 !important; border-color: #3B5063 !important; color: #45D4C4 !important; }
+.sidebar-user { color: #B8C7D6 !important; }
+.sidebar-bottom { border-top-color: #2B4153 !important; }
+.sidebar-nav-item .nav-badge { background: #FF6F6B !important; }
+
+.app-main { background: #182334; }
+
+.memo-card, .memo-editor-page, .memo-detail-page, .manage-page,
+.auth-page, .voice-page, .health-page, .nl-card {
+  background: #223445 !important; border-color: #3B5063 !important; color: #EEF7FF !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3) !important;
+}
+.memo-card.pinned { border-left-color: #45D4C4 !important; }
+.memo-title { color: #EEF7FF !important; }
+.memo-preview { color: #B8C7D6 !important; }
+.memo-card-actions button, .memo-card-actions a {
+  background: #2B4153 !important; color: #B8C7D6 !important;
+}
+
+input, textarea, select {
+  background: #132131 !important; color: #EEF7FF !important;
+  border-color: #3B5063 !important;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: #45D4C4 !important; outline: none !important;
+}
+
+.btn-primary, button[type="submit"], .nl-btn-save, .nl-btn-convert {
+  background: #45D4C4 !important; color: #182334 !important; font-weight: bold !important;
+}
+.btn-secondary {
+  background: #2B4153 !important; color: #EEF7FF !important; border-color: #3B5063 !important;
+}
+.btn-danger, .btn-small-danger { background: #FF6F6B !important; }
+.btn-record { background: #FF6F6B !important; }
+
+.memo-editor-page label, .auth-page label { color: #B8C7D6 !important; }
+
+.nl-textarea { background: #132131 !important; border-color: #3B5063 !important; color: #EEF7FF !important; }
+.nl-recognition-row { background: #132131 !important; }
+.nl-rec-label { color: #B8C7D6 !important; }
+.nl-rec-value { color: #EEF7FF !important; }
+.nl-rec-parsed { color: #45D4C4 !important; }
+.nl-rec-icon { background: #2B4153 !important; }
+.nl-preview-card { background: #132131 !important; border-color: #3B5063 !important; }
+.nl-field-label { color: #B8C7D6 !important; }
+.nl-field-value { color: #EEF7FF !important; }
+.nl-badge-status { background: #1D6F72 !important; color: #45D4C4 !important; }
+.nl-badge-ok { background: #1D3A2A !important; color: #62D58C !important; }
+.nl-warning { background: #3D3520 !important; border-color: #FFD35C !important; }
+.nl-warning-header, .nl-warning-text { color: #FFD35C !important; }
+.nl-suggested-time { background: #223445 !important; border-color: #FFD35C !important; color: #EEF7FF !important; }
+.nl-btn-use-suggestion { background: #2B4153 !important; border-color: #3B5063 !important; color: #EEF7FF !important; }
+.nl-method-card { background: #132131 !important; border-color: #3B5063 !important; }
+.nl-method-card .method-label { color: #B8C7D6 !important; }
+.nl-method-card.selected { border-color: #45D4C4 !important; background: #1D3A3A !important; }
+.nl-workflow { background: #223445 !important; }
+.nl-step-icon { background: #2B4153 !important; }
+.nl-step-title { color: #EEF7FF !important; }
+.nl-step-desc { color: #B8C7D6 !important; }
+.nl-step-arrow { color: #3B5063 !important; }
+.nl-btn-edit { background: #132131 !important; border-color: #3B5063 !important; color: #45D4C4 !important; }
+
+.nl-card-title { color: #EEF7FF !important; }
+.status-active { background: #1D3A2A !important; color: #62D58C !important; }
+.status-archived { background: #3D3520 !important; color: #FFD35C !important; }
+.status-deleted { background: #3D2020 !important; color: #FF6F6B !important; }
+
+.memo-filters select { background: #132131 !important; color: #EEF7FF !important; border-color: #3B5063 !important; }
+
+.saved-account-chip { background: #132131 !important; border-color: #3B5063 !important; }
+.saved-account-chip:hover { border-color: #45D4C4 !important; }
+.saved-account-chip.active { background: #1D3A3A !important; border-color: #45D4C4 !important; }
+.saved-account-name { color: #EEF7FF !important; }
+
+.form-error { color: #FF6F6B !important; }
+.error-message { background: #3D2020 !important; color: #FF6F6B !important; }
+.loading-spinner { color: #B8C7D6 !important; }
+.tag-checkbox { color: #B8C7D6 !important; }
+.item-list li { border-bottom-color: #2B4153 !important; }
+.memo-detail-content { border-color: #2B4153 !important; }
+.memo-detail-meta { color: #B8C7D6 !important; }
+.nav-user { color: #B8C7D6 !important; }
+.voice-meta, .voice-sub-hint { color: #B8C7D6 !important; }
+.inline-form input { background: #132131 !important; color: #EEF7FF !important; border-color: #3B5063 !important; }
+.voice-result pre { background: #132131 !important; color: #EEF7FF !important; }
+.health-detail pre { background: #132131 !important; color: #EEF7FF !important; }
+.transcribing-hint { color: #45D4C4 !important; }
+.editor-toolbar .btn-ai { background: #45D4C4 !important; color: #182334 !important; }
+.nl-char-count { color: #B8C7D6 !important; }
+.nl-btn-clear { color: #B8C7D6 !important; }
+.auth-link a { color: #45D4C4 !important; }
+h2, h3 { color: #EEF7FF !important; }
+a { color: #45D4C4 !important; }
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #132131; }
+::-webkit-scrollbar-thumb { background: #3B5063; border-radius: 4px; }
+::selection { background: #45D4C4; color: #182334; }
+
+/* Desktop titlebar (frameless window) */
+.desktop-titlebar {
+  position: fixed; top: 0; left: 0; right: 0; height: 32px;
+  background: #132131; z-index: 99999;
+  display: flex; align-items: center;
+  -webkit-app-region: drag; user-select: none;
+}
+.desktop-titlebar .title { color: #B8C7D6; font-size: 12px; margin-left: 12px; }
+.desktop-titlebar .ctrls { margin-left: auto; display: flex; height: 32px; -webkit-app-region: no-drag; }
+.desktop-titlebar .ctrl {
+  width: 46px; height: 32px; border: none; background: none;
+  color: #B8C7D6; font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.desktop-titlebar .ctrl:hover { background: #223445; }
+.desktop-titlebar .ctrl.close:hover { background: #FF6F6B; color: white; }
+.app-layout { padding-top: 32px; }
+.sidebar { padding-top: 32px; }

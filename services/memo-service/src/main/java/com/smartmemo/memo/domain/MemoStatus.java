@@ -5,6 +5,7 @@ package com.smartmemo.memo.domain;
  */
 public enum MemoStatus {
     active,
+    completed,
     archived,
     deleted
 }
