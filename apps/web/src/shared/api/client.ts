@@ -1,8 +1,5 @@
 import axios from 'axios';
 
-/**
- * 统一 API 响应格式
- */
 export interface ApiResponse<T = unknown> {
   code: string;
   message: string;
@@ -10,51 +7,90 @@ export interface ApiResponse<T = unknown> {
   traceId: string;
 }
 
-/**
- * 分页响应格式
- */
-export interface PaginatedResponse<T> {
-  items: T[];
-  nextCursor: string | null;
-  hasMore: boolean;
-}
+const TOKEN_KEY = 'access_token';
+const REFRESH_KEY = 'refresh_token';
 
-/**
- * API Client 实例。
- * 统一处理 baseURL、token 注入、traceId 传递、错误转换。
- */
 const apiClient = axios.create({
   baseURL: '/api/v1',
   timeout: 15_000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
 
-// 请求拦截器：注入 traceId
+// ===== 请求拦截器：注入 Token 和 TraceId =====
 apiClient.interceptors.request.use((config) => {
-  const traceId = generateTraceId();
-  config.headers.set('X-Trace-Id', traceId);
+  config.headers.set('X-Trace-Id', crypto.randomUUID());
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (token) {
+    config.headers.set('Authorization', `Bearer ${token}`);
+  }
   return config;
 });
 
-// 响应拦截器：统一错误处理
+// ===== 响应拦截器：401 自动刷新 =====
+let isRefreshing = false;
+let refreshQueue: Array<{ resolve: (token: string) => void; reject: (err: unknown) => void }> = [];
+
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response) {
-      const body = error.response.data as ApiResponse | undefined;
-      console.error(`[API Error] ${body?.code ?? 'UNKNOWN'}: ${body?.message ?? error.message}`);
-    } else if (error.request) {
-      console.error('[API Error] 网络不可达，请检查后端服务是否启动');
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      const refreshToken = localStorage.getItem(REFRESH_KEY);
+      if (!refreshToken) {
+        clearAuth();
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
+
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          refreshQueue.push({ resolve, reject });
+        }).then((token) => {
+          originalRequest.headers.set('Authorization', `Bearer ${token}`);
+          return apiClient(originalRequest);
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const res = await axios.post('/api/v1/auth/refresh', { refreshToken });
+        const { accessToken, refreshToken: newRefresh } = res.data.data;
+        localStorage.setItem(TOKEN_KEY, accessToken);
+        localStorage.setItem(REFRESH_KEY, newRefresh);
+
+        refreshQueue.forEach((q) => q.resolve(accessToken));
+        refreshQueue = [];
+
+        originalRequest.headers.set('Authorization', `Bearer ${accessToken}`);
+        return apiClient(originalRequest);
+      } catch (refreshError) {
+        clearAuth();
+        refreshQueue.forEach((q) => q.reject(refreshError));
+        refreshQueue = [];
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
     }
     return Promise.reject(error);
   },
 );
 
-function generateTraceId(): string {
-  // 生成 UUID v7 风格 traceId
-  return crypto.randomUUID();
+export function saveAuth(accessToken: string, refreshToken: string) {
+  localStorage.setItem(TOKEN_KEY, accessToken);
+  localStorage.setItem(REFRESH_KEY, refreshToken);
+}
+
+export function clearAuth() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REFRESH_KEY);
+}
+
+export function getAccessToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
 }
 
 export default apiClient;

@@ -31,8 +31,13 @@ dependencies {
     // Redis (用于限流)
     implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
 
-    // Security (占位，后续启用)
-    // implementation 'org.springframework.boot:spring-boot-starter-security'
+    // Security
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    // JWT (解析和校验 Token)
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
     // Logging
     implementation 'io.micrometer:micrometer-tracing-bridge-brave'

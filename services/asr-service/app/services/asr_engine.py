@@ -1,0 +1,117 @@
+"""
+ASR 转录引擎。
+
+默认使用 硅基流动 SiliconFlow SenseVoiceSmall（云端免费）。
+可通过 ASR_ENGINE_MOCK=true 切换到 Mock 引擎。
+"""
+
+import logging
+import os
+import httpx
+from app.core.config import SILICONFLOW_API_KEY as _SF_KEY
+from app.services.file_service import get_presigned_url
+
+logger = logging.getLogger(__name__)
+
+USE_MOCK = os.getenv("ASR_ENGINE_MOCK", "false").lower() == "true"
+
+# SiliconFlow 配置
+SILICONFLOW_API_KEY = os.getenv("SILICONFLOW_API_KEY") or _SF_KEY
+SILICONFLOW_ASR_URL = "https://api.siliconflow.cn/v1/audio/transcriptions"
+SILICONFLOW_MODEL = "FunAudioLLM/SenseVoiceSmall"
+
+
+async def transcribe(object_key: str) -> tuple[str, int]:
+    """
+    转录音频文件，返回 (转录文本, 音频时长秒数)。
+    """
+    if USE_MOCK:
+        return await _mock_transcribe(object_key)
+    return await _siliconflow_transcribe(object_key)
+
+
+# ==================== SiliconFlow SenseVoice 引擎 ====================
+
+async def _siliconflow_transcribe(object_key: str) -> tuple[str, int]:
+    """使用硅基流动 SenseVoiceSmall 进行语音转写。webm 格式先转 WAV。"""
+    import subprocess
+    import tempfile
+    import os
+    from app.services.file_service import _get_client
+    from app.core.config import MINIO_BUCKET
+
+    # 从 MinIO 下载音频字节
+    client = _get_client()
+    response = client.get_object(MINIO_BUCKET, object_key)
+    audio_bytes = response.read()
+    response.close()
+    response.release_conn()
+
+    logger.info("Submitting to SiliconFlow: object=%s, size=%d, model=%s",
+                object_key, len(audio_bytes), SILICONFLOW_MODEL)
+
+    # webm/opus 转 WAV (SiliconFlow 不支持 webm)
+    is_webm = object_key.endswith(".webm")
+    if is_webm:
+        tmp_in = tempfile.NamedTemporaryFile(suffix=".webm", delete=False)
+        tmp_in.write(audio_bytes)
+        tmp_in.close()
+        tmp_out = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+        tmp_out.close()
+        try:
+            subprocess.run([
+                "ffmpeg", "-y", "-i", tmp_in.name,
+                "-ar", "16000", "-ac", "1", "-f", "wav", tmp_out.name
+            ], capture_output=True, timeout=15, check=True)
+            with open(tmp_out.name, "rb") as f:
+                audio_bytes = f.read()
+            logger.info("webm→wav converted: %d → %d bytes", len(audio_bytes), len(audio_bytes))
+        except Exception as e:
+            logger.warning("ffmpeg convert failed: %s, sending raw bytes", e)
+        finally:
+            os.unlink(tmp_in.name)
+            os.unlink(tmp_out.name)
+
+    ext = "wav"
+    mime = "audio/wav"
+
+    # 提交文件到 SiliconFlow
+    async with httpx.AsyncClient(timeout=30) as http:
+        resp = await http.post(
+            SILICONFLOW_ASR_URL,
+            headers={"Authorization": f"Bearer {SILICONFLOW_API_KEY}"},
+            files={"file": ("audio.wav", audio_bytes, mime)},
+            data={"model": SILICONFLOW_MODEL},
+        )
+
+    if resp.status_code != 200:
+        raise RuntimeError(
+            f"SiliconFlow 转写失败: status={resp.status_code}, "
+            f"body={resp.text[:200]}"
+        )
+
+    result = resp.json()
+    text = result.get("text", "").strip()
+    if not text:
+        raise RuntimeError(f"SiliconFlow 返回空文本, raw={resp.text[:200]}")
+
+    logger.info("SiliconFlow completed: textLen=%d, text=%s",
+                len(text), text[:80])
+    # duration 不精确，SenseVoice 不返回时长
+    return text, 0
+
+
+# ==================== Mock 引擎 ====================
+
+async def _mock_transcribe(object_key: str) -> tuple[str, int]:
+    import asyncio
+    delay = 2.0
+    logger.info("Mock transcribing: %s (delay=%ss)", object_key, delay)
+    await asyncio.sleep(delay)
+    text = (
+        "【Mock 转录结果】\n"
+        "这是模拟的语音转写文本。\n"
+        f"音频文件: {object_key}\n"
+        "设置 ASR_ENGINE_MOCK=false 使用真实引擎。"
+    )
+    return text, 20
