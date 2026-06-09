@@ -1,22 +1,12 @@
 @echo off
-:: 智能备忘录桌面端启动脚本
-:: 使用 Chrome App Mode 模拟原生桌面体验
+cd /d "%~dp0"
 
-set URL=http://localhost:5173
-
-:: 查找 Chrome
-set CHROME=
-if exist "C:\Program Files\Google\Chrome\Application\chrome.exe" set CHROME=C:\Program Files\Google\Chrome\Application\chrome.exe
-if exist "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe" set CHROME=C:\Program Files (x86)\Google\Chrome\Application\chrome.exe
-if exist "%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe" set CHROME=%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe
-
-if "%CHROME%"=="" (
-    echo Chrome not found. Opening in default browser.
-    start %URL%
-    goto :end
+:: 检查是否已在运行
+tasklist /FI "WINDOWTITLE eq *智能备忘录*" 2>NUL | find /I "python" >NUL
+if %ERRORLEVEL%==0 (
+    echo 桌面端已在运行中，按 Alt+Tab 切换窗口
+    exit /b
 )
 
-echo Starting SmartMemo Desktop...
-start "" "%CHROME%" --app=%URL% --window-size=1100,750
-
-:end
+:: 用独立 venv 启动（避免 Windows Store Python 文件冲突）
+.venv\Scripts\python.exe desktop-app.py

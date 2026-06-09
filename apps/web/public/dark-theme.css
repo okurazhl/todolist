@@ -32,6 +32,7 @@ body { background: #182334 !important; color: #EEF7FF !important; }
 .memo-card.pinned { border-left-color: #45D4C4 !important; }
 .memo-title { color: #EEF7FF !important; }
 .memo-preview { color: #B8C7D6 !important; }
+.memo-reminder { color: #45D4C4 !important; }
 .memo-card-actions button, .memo-card-actions a {
   background: #2B4153 !important; color: #B8C7D6 !important;
 }

@@ -33,7 +33,10 @@ async def transcribe(object_key: str) -> tuple[str, int]:
 # ==================== SiliconFlow SenseVoice 引擎 ====================
 
 async def _siliconflow_transcribe(object_key: str) -> tuple[str, int]:
-    """使用硅基流动 SenseVoiceSmall 进行语音转写。"""
+    """使用硅基流动 SenseVoiceSmall 进行语音转写。webm 格式先转 WAV。"""
+    import subprocess
+    import tempfile
+    import os
     from app.services.file_service import _get_client
     from app.core.config import MINIO_BUCKET
 
@@ -47,16 +50,37 @@ async def _siliconflow_transcribe(object_key: str) -> tuple[str, int]:
     logger.info("Submitting to SiliconFlow: object=%s, size=%d, model=%s",
                 object_key, len(audio_bytes), SILICONFLOW_MODEL)
 
-    # 根据 object_key 推测文件扩展名
-    ext = "webm" if object_key.endswith(".webm") else "wav"
-    mime = "audio/webm" if ext == "webm" else "audio/wav"
+    # webm/opus 转 WAV (SiliconFlow 不支持 webm)
+    is_webm = object_key.endswith(".webm")
+    if is_webm:
+        tmp_in = tempfile.NamedTemporaryFile(suffix=".webm", delete=False)
+        tmp_in.write(audio_bytes)
+        tmp_in.close()
+        tmp_out = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+        tmp_out.close()
+        try:
+            subprocess.run([
+                "ffmpeg", "-y", "-i", tmp_in.name,
+                "-ar", "16000", "-ac", "1", "-f", "wav", tmp_out.name
+            ], capture_output=True, timeout=15, check=True)
+            with open(tmp_out.name, "rb") as f:
+                audio_bytes = f.read()
+            logger.info("webm→wav converted: %d → %d bytes", len(audio_bytes), len(audio_bytes))
+        except Exception as e:
+            logger.warning("ffmpeg convert failed: %s, sending raw bytes", e)
+        finally:
+            os.unlink(tmp_in.name)
+            os.unlink(tmp_out.name)
+
+    ext = "wav"
+    mime = "audio/wav"
 
     # 提交文件到 SiliconFlow
     async with httpx.AsyncClient(timeout=30) as http:
         resp = await http.post(
             SILICONFLOW_ASR_URL,
             headers={"Authorization": f"Bearer {SILICONFLOW_API_KEY}"},
-            files={"file": (f"audio.{ext}", audio_bytes, mime)},
+            files={"file": ("audio.wav", audio_bytes, mime)},
             data={"model": SILICONFLOW_MODEL},
         )
 

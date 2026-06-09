@@ -27,7 +27,7 @@ public class GlobalExceptionHandler {
                 .reduce((a, b) -> a + "; " + b)
                 .orElse("参数校验失败");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("code", "SYS_ERROR", "message", message, "data", null, "traceId", traceId));
+                .body(Map.of("code", "SYS_ERROR", "message", message, "data", "", "traceId", traceId));
     }
 
     @ExceptionHandler(Exception.class)
@@ -36,6 +36,6 @@ public class GlobalExceptionHandler {
         log.error("Unhandled exception: traceId={}", traceId, ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("code", "SYS_ERROR", "message", ex.getMessage() != null ? ex.getMessage() : "Internal error",
-                        "data", null, "traceId", traceId));
+                        "data", "", "traceId", traceId));
     }
 }

@@ -45,7 +45,50 @@ export function InputSection({ value, onChange, onConvert, converting }: Props) 
 
     await new Promise((r) => setTimeout(r, 300));
 
-    if (chunks.current.length === 0) {
+    const hasChunks = chunks.current.length > 0;
+
+    // 桌面端：使用 Python API 录音（绕过 WebView2 麦克风限制）
+    // Python 端在后台线程中录音+转写，结果通过 __voiceResultCallback 回调推送
+    const desktopAPI = (window as any).pywebview?.api;
+    if (desktopAPI?.voice_record) {
+      try {
+        const token = localStorage.getItem('access_token') || '';
+
+        // 用 Promise 包装回调，等待 Python 端推送结果
+        const text = await new Promise<string>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            delete (window as any).__voiceResultCallback;
+            reject(new Error('语音转写超时，请重试'));
+          }, 50000);
+
+          (window as any).__voiceResultCallback = (result: { text?: string; error?: string }) => {
+            clearTimeout(timeout);
+            delete (window as any).__voiceResultCallback;
+            if (result.error) {
+              reject(new Error(result.error));
+            } else {
+              resolve(result.text || '');
+            }
+          };
+
+          // Python voice_record 立即返回，不阻塞
+          desktopAPI.voice_record(token);
+        });
+
+        if (text && !text.startsWith('[')) {
+          onChange(value ? value + '\n' + text : text);
+        } else {
+          setVoiceError(text || '转写失败');
+        }
+      } catch (err: any) {
+        setVoiceError(err?.message || '语音录入失败');
+      } finally {
+        setTranscribing(false);
+      }
+      return;
+    }
+
+    if (!hasChunks) {
       setTranscribing(false);
       setVoiceError('未捕获到音频数据，请重试');
       return;

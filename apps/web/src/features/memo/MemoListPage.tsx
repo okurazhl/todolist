@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { listMemos, deleteMemo, pinMemo, unpinMemo, archiveMemo, completeMemo, uncompleteMemo, type MemoItem } from '../../shared/api/memos';
 import { listCategories, type CategoryItem } from '../../shared/api/categories';
@@ -16,18 +16,22 @@ export function MemoListPage() {
   const categoryId = searchParams.get('categoryId') || undefined;
   const rawRemindBefore = searchParams.get('remindBefore');
 
-  // 解析 remindBefore 参数
-  const remindBefore = rawRemindBefore === 'today'
-    ? new Date(new Date().setHours(23, 59, 59, 999)).toISOString()
-    : rawRemindBefore === 'now'
-      ? new Date().toISOString()
-      : rawRemindBefore || undefined;
+  // 解析 remindBefore 参数（使用 useMemo 避免无限渲染）
+  const remindBefore = React.useMemo(() => {
+    if (rawRemindBefore === 'today') {
+      return new Date(new Date().setHours(23, 59, 59, 999)).toISOString();
+    }
+    if (rawRemindBefore === 'now') {
+      return new Date().toISOString();
+    }
+    return rawRemindBefore || undefined;
+  }, [rawRemindBefore]);
 
-  const load = useCallback(async (cursor?: string) => {
+  const load = useCallback(async (cursor?: string, rb?: string) => {
     setLoading(true);
     setError('');
     try {
-      const data = await listMemos({ status, categoryId, tagId: undefined, cursor, remindBefore, limit: 20 });
+      const data = await listMemos({ status, categoryId, tagId: undefined, cursor, remindBefore: rb, limit: 20 });
       if (cursor) {
         setMemos((prev) => [...prev, ...data.items]);
       } else {
@@ -38,9 +42,9 @@ export function MemoListPage() {
     } finally {
       setLoading(false);
     }
-  }, [status, categoryId, remindBefore]);
+  }, [status, categoryId]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(undefined, remindBefore); }, [load, remindBefore]);
 
   useEffect(() => {
     listCategories().then(setCategories).catch(() => {});
@@ -112,6 +116,12 @@ export function MemoListPage() {
               {memo.isPinned && <span className="pin-badge">📌</span>}
             </div>
             <p className="memo-preview">{memo.content?.substring(0, 100) || '(无内容)'}</p>
+            {memo.remindAt && (
+              <p className="memo-reminder">🔔 {new Date(memo.remindAt).toLocaleString('zh-CN', {
+                month: 'numeric', day: 'numeric',
+                hour: '2-digit', minute: '2-digit',
+              })}</p>
+            )}
             <div className="memo-card-actions">
               {memo.status === 'deleted' ? (
                 <>
